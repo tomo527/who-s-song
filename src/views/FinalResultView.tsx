@@ -16,17 +16,14 @@ const getRankedPlayers = (players: Player[]): RankedPlayer[] => {
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
   return sortedPlayers.map((player, index) => {
-    const previousPlayer = sortedPlayers[index - 1];
-    const rank =
-      index === 0
-        ? 1
-        : player.score === previousPlayer.score
-          ? sortedPlayers
-              .slice(0, index)
-              .filter((candidate) => candidate.score > player.score).length + 1
-          : index + 1;
+    const higherScoreCount = sortedPlayers
+      .slice(0, index)
+      .filter((candidate) => candidate.score > player.score).length;
 
-    return { ...player, rank };
+    return {
+      ...player,
+      rank: higherScoreCount + 1,
+    };
   });
 };
 
@@ -35,8 +32,8 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({ players, onBac
   const rankedPlayers = getRankedPlayers(players);
 
   const handleCopyResults = async () => {
-    const text = rankedPlayers.map((player) => `${player.rank}位 ${player.name} (${player.score}pt)`).join('\n');
-    const fullText = `誰の曲？匿名セトリ推理ゲーム 最終結果\n\n${text}`;
+    const lines = rankedPlayers.map((player) => `${player.rank}位 ${player.name} (${player.score}pt)`);
+    const fullText = `誰の曲？匿名セトリ推理ゲーム 最終結果\n\n${lines.join('\n')}`;
 
     await navigator.clipboard.writeText(fullText);
     setCopied(true);

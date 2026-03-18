@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Layout } from '../components/Layout';
+import React, { useEffect, useState } from 'react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
-import { subscribeRound, subscribeSubmissions, submitSong, updateRoundPhase, submitGuess, subscribePlayerGuess } from '../firebase/game';
-import type { Round, Submission, Player, GuessAnswer } from '../types';
+import { Layout } from '../components/Layout';
+import {
+  subscribePlayerGuess,
+  subscribeRound,
+  subscribeSubmissions,
+  submitGuess,
+  submitSong,
+  updateRoundPhase,
+} from '../firebase/game';
 import { subscribePlayers } from '../firebase/player';
+import type { GuessAnswer, Player, Round, Submission } from '../types';
 
 interface GameViewProps {
   roomId: string;
@@ -27,129 +34,144 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const unsubRound = subscribeRound(roomId, roundId, setRound);
-    const unsubPlayers = subscribePlayers(roomId, setPlayers);
-    const unsubSubs = subscribeSubmissions(roomId, roundId, (subs) => {
-      setSubmissions(subs);
-      // 自分が提出済みかチェック
-      const mySub = subs.find(s => s.playerId === playerId);
-      if (mySub) {
+    const unsubscribeRound = subscribeRound(roomId, roundId, setRound);
+    const unsubscribePlayers = subscribePlayers(roomId, setPlayers);
+    const unsubscribeSubmissions = subscribeSubmissions(roomId, roundId, (nextSubmissions) => {
+      setSubmissions(nextSubmissions);
+
+      const mySubmission = nextSubmissions.find((submission) => submission.playerId === playerId);
+      if (mySubmission) {
         setIsSubmitted(true);
-        setSongName(mySub.songName);
-        setComment(mySub.comment || '');
+        setSongName(mySubmission.songName);
+        setComment(mySubmission.comment || '');
       }
     });
-
-    // 自分の予想を購読（リロード復帰用）
-    const unsubGuess = subscribePlayerGuess(roomId, roundId, playerId, (g) => {
-      if (g && g.answers) {
-        setGuesses(g.answers);
+    const unsubscribeGuess = subscribePlayerGuess(roomId, roundId, playerId, (guess) => {
+      if (guess?.answers) {
+        setGuesses(guess.answers);
         setIsGuessSubmitted(true);
       }
     });
 
     return () => {
-      unsubRound();
-      unsubSubs();
-      unsubPlayers();
-      unsubGuess();
+      unsubscribeRound();
+      unsubscribePlayers();
+      unsubscribeSubmissions();
+      unsubscribeGuess();
     };
-  }, [roomId, roundId, playerId]);
+  }, [playerId, roomId, roundId]);
 
-  // 曲を提出
   const handleSubmitSong = async () => {
-    if (!songName) return;
+    if (!songName.trim()) {
+      return;
+    }
+
     setLoading(true);
     try {
-      await submitSong(roomId, roundId, playerId, songName, comment);
+      await submitSong(roomId, roundId, playerId, songName.trim(), comment.trim());
       setIsSubmitted(true);
-    } catch (e) {
-      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  // 予想を保存
-  const handleAssignGuess = (submissionId: string, targetPlayerId: string) => {
-    setGuesses(prev => {
-      const filtered = prev.filter(g => g.submissionId !== submissionId);
-      return [...filtered, { submissionId, guessedPlayerId: targetPlayerId }];
+  const handleAssignGuess = (submissionId: string, guessedPlayerId: string) => {
+    setGuesses((previousGuesses) => {
+      const filtered = previousGuesses.filter((guess) => guess.submissionId !== submissionId);
+      return [...filtered, { submissionId, guessedPlayerId }];
     });
   };
 
   const handleSubmitGuesses = async () => {
-    if (guesses.length < submissions.length) return;
+    if (guesses.length < submissions.length) {
+      return;
+    }
+
     setLoading(true);
     try {
       await submitGuess(roomId, roundId, playerId, guesses);
-      // 推理完了状態を表示（MVPでは簡易的にフラグで管理するか Firestore 連携）
-    } catch (e) {
-      console.error(e);
+      setIsGuessSubmitted(true);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!round) return <Layout title="読込中..."><p>ロード中...</p></Layout>;
+  if (!round) {
+    return (
+      <Layout title="ゲーム">
+        <p className="text-slate-500">ラウンド情報を読み込んでいます...</p>
+      </Layout>
+    );
+  }
 
-  // フェーズ1: 曲提出
   if (round.phase === 'submitting') {
     return (
       <Layout title="曲を提出">
         <div className="space-y-8">
           <Card className="bg-primary-600 text-white">
-            <p className="text-xs font-bold text-primary-200 uppercase tracking-widest mb-2">今ラウンドのお題</p>
+            <p className="text-xs font-bold text-primary-200 uppercase tracking-widest mb-2">今回のお題</p>
             <h3 className="text-2xl font-black">{round.theme}</h3>
           </Card>
 
           {!isSubmitted ? (
             <div className="space-y-6">
-              <Input 
-                label="曲名" 
-                placeholder="例: 残響散歌" 
+              <Input
+                label="曲名"
+                placeholder="例: 夜に駆ける"
                 value={songName}
-                onChange={(e) => setSongName(e.target.value)}
+                onChange={(event) => setSongName(event.target.value)}
               />
-              <Input 
-                label="ひとこと（任意）" 
-                placeholder="例: この曲を聴くと元気が出ます" 
+              <Input
+                label="ひとこと"
+                placeholder="任意。あとで結果画面に表示されます"
                 value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                onChange={(event) => setComment(event.target.value)}
               />
-              <Button size="lg" fullWidth isLoading={loading} onClick={handleSubmitSong}>提出する</Button>
+              <Button size="lg" fullWidth isLoading={loading} onClick={handleSubmitSong}>
+                提出する
+              </Button>
             </div>
           ) : (
             <div className="text-center py-12 space-y-6">
-              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto ring-8 ring-green-50 animate-bounce">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto ring-8 ring-green-50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
               <div className="space-y-2">
-                <h4 className="text-2xl font-black text-slate-800">提出完了！</h4>
-                <p className="text-slate-500 font-bold">全員の提出が終わるのを待っています...</p>
+                <h4 className="text-2xl font-black text-slate-800">提出完了</h4>
+                <p className="text-slate-500 font-bold">全員の提出が揃うまでお待ちください。</p>
               </div>
-              
+
               <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
                 <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-tighter">Status</p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {players.map(p => {
-                    const hasSubmitted = submissions.some(s => s.playerId === p.id);
+                  {players.map((player) => {
+                    const hasSubmitted = submissions.some((submission) => submission.playerId === player.id);
                     return (
-                      <div key={p.id} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${hasSubmitted ? 'bg-green-500 text-white scale-110' : 'bg-slate-200 text-slate-400'}`}>
-                        {hasSubmitted ? '✓' : p.name.charAt(0)}
+                      <div
+                        key={player.id}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                          hasSubmitted ? 'bg-green-500 text-white scale-110' : 'bg-slate-200 text-slate-400'
+                        }`}
+                      >
+                        {hasSubmitted ? '✓' : player.name.charAt(0)}
                       </div>
                     );
                   })}
                 </div>
                 <div className="mt-3 text-xs font-black text-slate-500">
-                  {submissions.length} / {players.length}人 完了
+                  {submissions.length} / {players.length} 人が提出済み
                 </div>
               </div>
-              
+
               {isHost && submissions.length === players.length && (
                 <div className="pt-4">
-                  <Button variant="primary" size="lg" fullWidth onClick={() => updateRoundPhase(roomId, roundId, 'guessing')}>
-                    全員揃ったので推理を開始！
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onClick={() => void updateRoundPhase(roomId, roundId, 'guessing')}
+                  >
+                    推理フェーズへ進む
                   </Button>
                 </div>
               )}
@@ -160,7 +182,6 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
     );
   }
 
-  // フェーズ2: 推理中
   if (round.phase === 'guessing') {
     return (
       <Layout title="推理タイム">
@@ -169,54 +190,65 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
             <p className="text-[10px] font-bold text-primary-200 uppercase tracking-widest mb-1">今回のお題</p>
             <h3 className="text-xl font-black">{round.theme}</h3>
           </Card>
-          
+
           <div className="text-center space-y-1">
-            <h3 className="text-lg font-black text-slate-800 tracking-tight">誰がどの曲を選んだ？</h3>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">各プレイヤーを曲に割り当ててください</p>
+            <h3 className="text-lg font-black text-slate-800 tracking-tight">誰の曲かを予想してください</h3>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
+              同じ人を複数の曲に割り当てることはできません
+            </p>
           </div>
 
           {isGuessSubmitted ? (
             <div className="text-center py-12 space-y-4">
               <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
-              <h4 className="text-xl font-bold">推理完了！</h4>
-              <p className="text-slate-500">ホストが正解を発表するのを待っています...</p>
+              <h4 className="text-xl font-bold">回答を送信しました</h4>
+              <p className="text-slate-500">結果発表までお待ちください。</p>
             </div>
           ) : (
             <>
               <div className="space-y-4">
-                {submissions.map((sub, idx) => (
-                  <Card key={sub.id} className="space-y-4">
+                {submissions.map((submission, index) => (
+                  <Card key={submission.id} className="space-y-4">
                     <div className="flex items-start gap-3">
                       <div className="flex-none w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-400">
-                        {idx + 1}
+                        {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-black text-lg text-slate-800 break-words">{sub.songName}</p>
-                        {sub.comment && <p className="text-sm text-slate-500 italic mt-1 leading-relaxed">"{sub.comment}"</p>}
+                        <p className="font-black text-lg text-slate-800 break-words">{submission.songName}</p>
+                        {submission.comment && (
+                          <p className="text-sm text-slate-500 italic mt-1 leading-relaxed">"{submission.comment}"</p>
+                        )}
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-2 mt-4">
-                      {players.map(p => {
-                        const isSelected = guesses.some(g => g.submissionId === sub.id && g.guessedPlayerId === p.id);
-                        const isAssignedElseWhere = guesses.some(g => g.submissionId !== sub.id && g.guessedPlayerId === p.id);
-                        const isMeForMySong = sub.playerId === playerId && p.id === playerId;
-                        
+                      {players.map((player) => {
+                        const isSelected = guesses.some(
+                          (guess) =>
+                            guess.submissionId === submission.id && guess.guessedPlayerId === player.id,
+                        );
+                        const isAssignedElsewhere = guesses.some(
+                          (guess) =>
+                            guess.submissionId !== submission.id && guess.guessedPlayerId === player.id,
+                        );
+                        const isOwnSong = submission.playerId === playerId && player.id === playerId;
+
                         return (
                           <button
-                            key={p.id}
-                            disabled={isAssignedElseWhere || isMeForMySong}
-                            onClick={() => handleAssignGuess(sub.id, p.id)}
+                            type="button"
+                            key={player.id}
+                            disabled={isAssignedElsewhere || isOwnSong}
+                            onClick={() => handleAssignGuess(submission.id, player.id)}
                             className={`
                               py-2.5 px-3 rounded-xl text-xs font-black transition-all border-2
                               ${isSelected ? 'bg-primary-600 border-primary-600 text-white shadow-lg shadow-primary-100 scale-[1.02]' : 'bg-white border-slate-100 text-slate-500'}
-                              ${(isAssignedElseWhere || isMeForMySong) ? 'opacity-20 grayscale' : 'hover:border-primary-200 active:scale-95'}
+                              ${(isAssignedElsewhere || isOwnSong) ? 'opacity-20 grayscale' : 'hover:border-primary-200 active:scale-95'}
                             `}
                           >
-                            {p.name}
-                            {isMeForMySong && <span className="block text-[8px] opacity-70">（自分です）</span>}
+                            {player.name}
+                            {isOwnSong && <span className="block text-[8px] opacity-70">自分は選べません</span>}
                           </button>
                         );
                       })}
@@ -226,18 +258,23 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
               </div>
 
               <div className="pt-6">
-                <Button 
-                  size="lg" 
-                  fullWidth 
+                <Button
+                  size="lg"
+                  fullWidth
                   variant={guesses.length === submissions.length ? 'primary' : 'outline'}
-                  disabled={guesses.length < submissions.length}
+                  disabled={guesses.length < submissions.length || loading}
                   onClick={handleSubmitGuesses}
                 >
                   回答を送信する
                 </Button>
                 {isHost && (
-                  <Button variant="ghost" fullWidth className="mt-4" onClick={() => updateRoundPhase(roomId, roundId, 'revealing')}>
-                    （ホスト専用）回答発表へ
+                  <Button
+                    variant="ghost"
+                    fullWidth
+                    className="mt-4"
+                    onClick={() => void updateRoundPhase(roomId, roundId, 'revealing')}
+                  >
+                    ホストが結果発表へ進む
                   </Button>
                 )}
               </div>
@@ -251,13 +288,8 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
   return (
     <Layout title="結果発表">
       <div className="text-center py-20">
-        <h3 className="text-2xl font-bold mb-4">正解発表</h3>
-        <p className="text-slate-500">まもなく結果が表示されます...</p>
-        {isHost && (
-          <Button className="mt-8" onClick={() => {/* 次のラウンドへ */}}>
-            次のラウンドへ
-          </Button>
-        )}
+        <h3 className="text-2xl font-bold mb-4">結果発表</h3>
+        <p className="text-slate-500">ホストが結果画面を開くのを待っています。</p>
       </div>
     </Layout>
   );

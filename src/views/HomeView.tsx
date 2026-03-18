@@ -54,8 +54,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
       await upsertPlayer(roomId, playerId, playerName, false);
       onJoinRoom(roomId, playerName, false);
-    } catch {
-      setError('参加に失敗しました。Firebase 設定と Firestore ルールを確認してください。');
+    } catch (joinError) {
+      setError(
+        joinError instanceof Error
+          ? joinError.message
+          : '参加に失敗しました。Firebase 設定と Firestore ルールを確認してください。',
+      );
     } finally {
       setLoading(false);
     }
@@ -87,8 +91,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
       await upsertPlayer(room.id, playerId, playerName, true);
       onJoinRoom(room.id, playerName, true);
-    } catch {
-      setError('ルーム作成に失敗しました。Firebase 設定と Firestore ルールを確認してください。');
+    } catch (createError) {
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : 'ルーム作成に失敗しました。Firebase 設定と Firestore ルールを確認してください。',
+      );
     } finally {
       setLoading(false);
     }
@@ -187,15 +195,15 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
       <div className="space-y-4">
         <Card>
           <h4 className="font-bold mb-2">1. ルーム作成</h4>
-          <p className="text-sm text-slate-600">ホストがルームを作り、参加者にルームコードを共有します。</p>
+          <p className="text-sm text-slate-600">ホストがルームを作成し、表示されたルームコードを参加者へ共有します。</p>
         </Card>
         <Card>
-          <h4 className="font-bold mb-2">2. 曲の提出</h4>
-          <p className="text-sm text-slate-600">お題に合う曲を1人1曲ずつ匿名で提出します。</p>
+          <h4 className="font-bold mb-2">2. 曲を匿名提出</h4>
+          <p className="text-sm text-slate-600">お題に合わせて各自が1曲ずつ提出します。提出内容は結果発表まで匿名です。</p>
         </Card>
         <Card>
-          <h4 className="font-bold mb-2">3. 推理と結果発表</h4>
-          <p className="text-sm text-slate-600">誰がどの曲を選んだかを当てて、正解数などでスコアを競います。</p>
+          <h4 className="font-bold mb-2">3. 推理して得点</h4>
+          <p className="text-sm text-slate-600">誰がどの曲を選んだかを当てて、正解数やボーナスでスコアを競います。</p>
         </Card>
       </div>
     </Layout>

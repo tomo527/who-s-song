@@ -1,6 +1,6 @@
 import { useEffect, useReducer } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db, firebaseConfigError } from '../firebase/config';
+import { firebaseConfigError, getDb } from '../firebase/config';
 import type { Room } from '../types';
 
 type RoomState = {
@@ -46,9 +46,9 @@ export const useRoom = (roomId: string) => {
       return;
     }
 
-    const roomRef = doc(db, 'rooms', roomId);
+    const db = getDb();
     const unsubscribe = onSnapshot(
-      roomRef,
+      doc(db, 'rooms', roomId),
       (snapshot) => {
         dispatch({
           type: 'snapshot',

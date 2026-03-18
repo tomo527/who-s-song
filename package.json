@@ -8,11 +8,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node ./scripts/run-build.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "dev:staging": "vite --mode staging",
-    "build:staging": "tsc -b && vite build --mode staging"
+    "build:staging": "node ./scripts/run-build.mjs staging"
   },
   "dependencies": {
     "firebase": "^12.10.0",

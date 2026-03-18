@@ -13,33 +13,33 @@ import { ResultView } from './views/ResultView';
 
 const STORAGE_KEY = 'song_guess_game_state';
 
+type SavedGameState = {
+  roomId: string;
+  playerName: string;
+  isHost: boolean;
+  playerId?: string;
+};
+
 function App() {
-  const [gameState, setGameState] = useState<{
-    roomId: string;
-    playerName: string;
-    isHost: boolean;
-    playerId?: string;
-  } | null>(() => {
+  const [gameState, setGameState] = useState<SavedGameState | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : null;
+      return saved ? (JSON.parse(saved) as SavedGameState) : null;
     } catch {
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }
   });
-
-  const { room, loading: roomLoading, error: roomError } = useRoom(gameState?.roomId || '');
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentRound, setCurrentRound] = useState<Round | null>(null);
+  const { room, loading, error } = useRoom(gameState?.roomId || '');
 
   useEffect(() => {
     if (gameState) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-      return;
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
     }
-
-    localStorage.removeItem(STORAGE_KEY);
   }, [gameState]);
 
   useEffect(() => {
@@ -47,8 +47,7 @@ function App() {
       return;
     }
 
-    const unsubscribe = subscribePlayers(gameState.roomId, setPlayers);
-    return () => unsubscribe();
+    return subscribePlayers(gameState.roomId, setPlayers);
   }, [gameState?.roomId]);
 
   useEffect(() => {
@@ -56,8 +55,7 @@ function App() {
       return;
     }
 
-    const unsubscribe = subscribeRound(gameState.roomId, room.currentRoundId, setCurrentRound);
-    return () => unsubscribe();
+    return subscribeRound(gameState.roomId, room.currentRoundId, setCurrentRound);
   }, [gameState?.roomId, room?.currentRoundId]);
 
   const handleJoinRoom = async (roomId: string, playerName: string, isHost: boolean) => {
@@ -65,15 +63,22 @@ function App() {
     setGameState({ roomId, playerName, isHost, playerId });
   };
 
-  if (firebaseConfigError && gameState) {
-    return <StartupErrorScreen message={firebaseConfigError} onBack={() => setGameState(null)} />;
-  }
-
   if (!gameState) {
     return <HomeView onJoinRoom={handleJoinRoom} startupError={firebaseConfigError} />;
   }
 
-  if (roomLoading) {
+  if (firebaseConfigError) {
+    return (
+      <StartupErrorScreen
+        title="Firebase 設定エラー"
+        description="環境変数が不足しているため、ルーム情報を読み込めません。"
+        message={firebaseConfigError}
+        onBack={() => setGameState(null)}
+      />
+    );
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center font-bold text-primary-500 animate-pulse">
         読み込み中...
@@ -81,21 +86,25 @@ function App() {
     );
   }
 
-  if (roomError) {
-    return <StartupErrorScreen message={roomError.message} onBack={() => setGameState(null)} />;
+  if (error) {
+    return (
+      <StartupErrorScreen
+        title="ルームの読み込みに失敗しました"
+        description="Firebase 設定または Firestore ルールを確認してください。"
+        message={error.message}
+        onBack={() => setGameState(null)}
+      />
+    );
   }
 
   if (!room) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 bg-slate-50">
-        <p className="font-bold text-slate-600">ルームが見つかりません。</p>
-        <button
-          className="px-6 py-2 bg-primary-600 text-white rounded-2xl font-bold shadow-lg shadow-primary-200"
-          onClick={() => setGameState(null)}
-        >
-          ホームに戻る
-        </button>
-      </div>
+      <StartupErrorScreen
+        title="ルームが見つかりません"
+        description="保存されていたルームが削除されたか、アクセスできません。"
+        message={gameState.roomId}
+        onBack={() => setGameState(null)}
+      />
     );
   }
 
@@ -106,14 +115,7 @@ function App() {
   }
 
   if (room.status === 'waiting') {
-    return (
-      <LobbyView
-        room={room}
-        playerName={gameState.playerName}
-        isHost={isActualHost}
-        onStartGame={() => {}}
-      />
-    );
+    return <LobbyView room={room} isHost={isActualHost} onStartGame={() => {}} />;
   }
 
   if (room.status === 'active' && room.currentRoundId) {
@@ -141,6 +143,8 @@ function App() {
 
   return (
     <StartupErrorScreen
+      title="未対応のルーム状態です"
+      description="想定外の room.status または round.phase です。"
       message={JSON.stringify(
         {
           roomStatus: room.status,
@@ -151,22 +155,20 @@ function App() {
         2,
       )}
       onBack={() => setGameState(null)}
-      title="未対応のルーム状態です"
-      description="room.status または round.phase が想定外の値になっています。"
     />
   );
 }
 
 function StartupErrorScreen({
+  title,
+  description,
   message,
   onBack,
-  title = 'アプリを開始できません',
-  description = 'Firebase 設定またはルーム状態を確認してください。',
 }: {
+  title: string;
+  description: string;
   message: string;
   onBack: () => void;
-  title?: string;
-  description?: string;
 }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6">
@@ -177,6 +179,7 @@ function StartupErrorScreen({
           {message}
         </code>
         <button
+          type="button"
           className="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold"
           onClick={onBack}
         >

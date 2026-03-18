@@ -11,10 +11,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, title, showBack, onBac
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-primary-100">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-md mx-auto px-4 h-16 flex items-center">
           <div className="flex items-center gap-2">
             {showBack && (
               <button
+                type="button"
                 onClick={onBack}
                 className="p-2 -ml-2 hover:bg-slate-100 rounded-full transition-colors"
                 aria-label="戻る"
@@ -29,9 +30,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, title, showBack, onBac
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 py-6 pb-24">
-        {children}
-      </main>
+      <main className="max-w-md mx-auto px-4 py-6 pb-24">{children}</main>
 
       <footer className="fixed bottom-0 left-0 right-0 py-4 text-center text-xs text-slate-400 bg-gradient-to-t from-slate-50 to-transparent">
         © 2026 誰の曲？匿名セトリ推理ゲーム
