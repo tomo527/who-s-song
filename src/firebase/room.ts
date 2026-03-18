@@ -1,6 +1,7 @@
 import { 
   collection, 
   doc, 
+  type FieldValue,
   setDoc, 
   query, 
   where, 
@@ -24,7 +25,7 @@ export const createRoom = async (hostId: string, settings: RoomSettings): Promis
   const roomId = doc(collection(db, "rooms")).id;
   const roomCode = generateRoomCode();
   
-  const roomData: Omit<Room, 'id' | 'createdAt'> & { createdAt: any } = {
+  const roomData: Omit<Room, 'id' | 'createdAt'> & { createdAt: FieldValue } = {
     roomCode,
     hostId,
     currentRoundId: "",

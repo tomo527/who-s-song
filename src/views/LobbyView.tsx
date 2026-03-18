@@ -36,7 +36,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ room, isHost, onStartGame 
       unsubscribePlayers();
       unsubscribeRound();
     };
-  }, [room.id, room.currentRoundId]);
+  }, [onStartGame, room.id, room.currentRoundId]);
 
   const handleStart = async () => {
     if (!isHost) return;
