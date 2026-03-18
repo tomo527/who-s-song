@@ -1,73 +1,64 @@
-# React + TypeScript + Vite
+# 誰の曲？匿名セトリ推理ゲーム (Song Guessing Game)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+匿名で提出された「曲」を見て、誰がその曲を選んだかを当てる、シンプルで盛り上がるオンラインパーティーゲームです。
 
-Currently, two official plugins are available:
+## 🚀 特徴
+- **リアルタイム共有**: Firebase Firestore を使用し、全員の端末で同期されます。
+- **匿名性の維持**: セキュリティルールとアプリケーションロジックにより、正解発表まで誰が何を選んだかは分かりません。
+- **柔軟な設定**: ホストは「お題（テーマ）」や「ラウンド数」を自由に設定できます。
+- **モバイル優先**: スマートフォンで遊びやすいUI/UX設計。
+- **セッション継続**: ブラウザをリロードしてもゲームに復帰できます。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🛠 セットアップ方法
 
-## React Compiler
+1. **リポジトリのクローン**
+2. **依存関係のインストール**
+   ```bash
+   npm install
+   ```
+3. **Firebase の設定**
+   - Firebase Console でプロジェクトを作成。
+   - Authentication で「匿名 (Anonymous)」を有効化。
+   - Cloud Firestore を作成。
+   - `.env.staging` ファイル（`.env.example` を参考に）を作成し、Firebase の設定値を記述。
+4. **セキュリティルールの適用**
+   - `firestore.rules` の内容を Firebase Console のルールタブに貼り付けます。
+5. **開発サーバーの起動**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+   **Local モード:**
+   ```bash
+   npm run dev
+   ```
 
-## Expanding the ESLint configuration
+   **Staging モード:**
+   ```bash
+   npm run dev:staging
+   ```
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🏗 デプロイ (Cloudflare Pages 等)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1. **ビルド**
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+   **Production:**
+   ```bash
+   npm run build
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+   **Staging:**
+   ```bash
+   npm run build:staging
+   ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+   ※ 現在、Node.js v24 (Experimental) 環境ではビルド時にクラッシュが発生することがあります。本番環境では Node.js v20 (LTS) 等の安定版を使用してください。
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+2. **デプロイ**
+   - `dist` ディレクトリの内容をホスティングサービスにアップロードします。
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📝 遊び方
+
+1. **ホスト**: ルームを作成し、ルームコードを参加者に共有。テーマ（お題）を設定して開始。
+2. **参加者**: ルームコードを入力して参加。
+3. **提出フェーズ**: お題に沿った曲名を匿名で入力して提出。
+4. **推理フェーズ**: 提出された曲のリストを見て、「誰がどの曲を選んだか」を予想して回答。
+5. **結果発表**: 正解と獲得スコアが表示されます。
+6. **最終結果**: 全ラウンド終了後、最終ランキングが表示されます。結果をコピーして SNS などで共有可能です。

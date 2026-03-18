@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:staging": "vite --mode staging",
+    "build:staging": "tsc -b && vite build --mode staging"
   },
   "dependencies": {
     "firebase": "^12.10.0",
