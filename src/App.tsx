@@ -115,7 +115,14 @@ function App() {
   }
 
   if (room.status === 'waiting') {
-    return <LobbyView room={room} isHost={isActualHost} onStartGame={() => {}} />;
+    return (
+      <LobbyView
+        room={room}
+        isHost={isActualHost}
+        currentPlayerId={gameState.playerId || ''}
+        onStartGame={() => {}}
+      />
+    );
   }
 
   if (room.status === 'active' && room.currentRoundId) {
@@ -125,7 +132,7 @@ function App() {
           room={room}
           roundId={room.currentRoundId}
           players={players}
-          isHost={isActualHost}
+          currentPlayerId={gameState.playerId || ''}
         />
       );
     }

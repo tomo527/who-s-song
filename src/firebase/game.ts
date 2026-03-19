@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -19,12 +20,14 @@ export const createRound = async (
   roomId: string,
   theme: string,
   roundNumber: number,
+  parentPlayerId: string,
 ): Promise<string> => {
   const db = getDb();
   const roundsRef = collection(db, 'rooms', roomId, 'rounds');
   const roundDoc = await addDoc(roundsRef, {
     theme,
     phase: 'submitting',
+    parentPlayerId,
     startedAt: serverTimestamp(),
   });
 
@@ -64,6 +67,18 @@ export const submitSong = async (
   comment?: string,
 ): Promise<void> => {
   const db = getDb();
+  const roundRef = doc(db, 'rooms', roomId, 'rounds', roundId);
+  const roundSnapshot = await getDoc(roundRef);
+
+  if (!roundSnapshot.exists()) {
+    throw new Error('Round not found');
+  }
+
+  const round = roundSnapshot.data() as Round;
+  if (round.parentPlayerId === playerId) {
+    throw new Error('親役はこのラウンドでは曲を提出しません。');
+  }
+
   const submissionsRef = collection(db, 'rooms', roomId, 'submissions');
   const existingSubmissionQuery = query(
     submissionsRef,
@@ -92,6 +107,18 @@ export const submitGuess = async (
   answers: Guess['answers'],
 ): Promise<void> => {
   const db = getDb();
+  const roundRef = doc(db, 'rooms', roomId, 'rounds', roundId);
+  const roundSnapshot = await getDoc(roundRef);
+
+  if (!roundSnapshot.exists()) {
+    throw new Error('Round not found');
+  }
+
+  const round = roundSnapshot.data() as Round;
+  if (round.parentPlayerId !== playerId) {
+    throw new Error('このラウンドで推理できるのは親役だけです。');
+  }
+
   const guessId = `${playerId}_${roundId}`;
 
   await setDoc(doc(db, 'rooms', roomId, 'guesses', guessId), {
@@ -154,6 +181,7 @@ export const finalizeRoundScores = async (
   room: Room,
   round: Round,
   players: Player[],
+  finalizedBy = room.hostId,
 ): Promise<void> => {
   const db = getDb();
   const roundRef = doc(db, 'rooms', room.id, 'rounds', round.id);
@@ -198,12 +226,16 @@ export const finalizeRoundScores = async (
     transaction.update(roundRef, {
       scoreFinalized: true,
       finalizedAt: Date.now(),
-      finalizedBy: room.hostId,
+      finalizedBy,
     });
   });
 };
 
-export const advanceGame = async (room: Room, nextTheme: string): Promise<void> => {
+export const advanceGame = async (
+  room: Room,
+  nextTheme: string,
+  parentPlayerId: string,
+): Promise<void> => {
   const db = getDb();
 
   if (room.currentRoundNumber >= room.settings.roundsCount) {
@@ -211,5 +243,5 @@ export const advanceGame = async (room: Room, nextTheme: string): Promise<void> 
     return;
   }
 
-  await createRound(room.id, nextTheme, room.currentRoundNumber + 1);
+  await createRound(room.id, nextTheme, room.currentRoundNumber + 1, parentPlayerId);
 };

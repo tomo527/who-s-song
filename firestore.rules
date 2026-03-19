@@ -15,6 +15,12 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/rooms/$(roomId)/players/$(request.auth.uid));
     }
 
+    function isCurrentParent(roomId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/rooms/$(roomId)).data.currentRoundId != ''
+        && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(get(/databases/$(database)/documents/rooms/$(roomId)).data.currentRoundId)).data.parentPlayerId == request.auth.uid;
+    }
+
     match /rooms/{roomId} {
       allow read: if true;
       allow create: if isSignedIn();
@@ -29,17 +35,31 @@ service cloud.firestore {
 
       match /players/{playerId} {
         allow read: if true;
-        allow create, update: if isSignedIn() && request.auth.uid == playerId;
+        allow create: if isSignedIn() && request.auth.uid == playerId;
+        allow update: if isSignedIn() && (
+          request.auth.uid == playerId ||
+          isHost(roomId) ||
+          isCurrentParent(roomId)
+        );
       }
 
       match /rounds/{roundId} {
         allow read: if true;
-        allow create, update: if isHost(roomId);
+        allow create: if isSignedIn() && (
+          isHost(roomId) ||
+          request.resource.data.parentPlayerId == request.auth.uid
+        );
+        allow update: if isSignedIn() && (
+          isHost(roomId) ||
+          resource.data.parentPlayerId == request.auth.uid
+        );
       }
 
       match /submissions/{submissionId} {
         allow read: if isRoomMember(roomId);
-        allow create: if isSignedIn() && request.resource.data.playerId == request.auth.uid;
+        allow create: if isSignedIn()
+          && request.resource.data.playerId == request.auth.uid
+          && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(request.resource.data.roundId)).data.parentPlayerId != request.auth.uid;
         allow update, delete: if false;
       }
 
@@ -48,7 +68,9 @@ service cloud.firestore {
           resource.data.playerId == request.auth.uid ||
           get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.scoreFinalized == true
         );
-        allow create, update: if isSignedIn() && request.resource.data.playerId == request.auth.uid;
+        allow create, update: if isSignedIn()
+          && request.resource.data.playerId == request.auth.uid
+          && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(request.resource.data.roundId)).data.parentPlayerId == request.auth.uid;
         allow delete: if false;
       }
     }

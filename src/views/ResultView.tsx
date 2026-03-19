@@ -1,23 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
-import { advanceGame, finalizeRoundScores, subscribeRound, subscribeSubmissions, updateRoundBonus } from '../firebase/game';
+import { getRandomPrompt } from '../constants/prompts';
+import {
+  advanceGame,
+  finalizeRoundScores,
+  subscribeRound,
+  subscribeSubmissions,
+  updateRoundBonus,
+} from '../firebase/game';
+import { getRotatingParent } from '../logic/parentRotation';
 import type { Player, Round, Room, Submission } from '../types';
 
 interface ResultViewProps {
   room: Room;
   roundId: string;
   players: Player[];
-  isHost: boolean;
+  currentPlayerId: string;
 }
 
-export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, isHost }) => {
+export const ResultView: React.FC<ResultViewProps> = ({
+  room,
+  roundId,
+  players,
+  currentPlayerId,
+}) => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [round, setRound] = useState<Round | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [nextTheme, setNextTheme] = useState('');
+  const [nextTheme, setNextTheme] = useState(() => getRandomPrompt());
 
   useEffect(() => {
     const unsubscribeSubmissions = subscribeSubmissions(room.id, roundId, setSubmissions);
@@ -29,19 +42,31 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
     };
   }, [room.id, roundId]);
 
+  const currentParent = useMemo(
+    () => players.find((player) => player.id === round?.parentPlayerId) ?? null,
+    [players, round?.parentPlayerId],
+  );
+  const nextRoundNumber = room.currentRoundNumber + 1;
+  const nextParent = useMemo(
+    () => getRotatingParent(players, nextRoundNumber),
+    [players, nextRoundNumber],
+  );
+  const isCurrentParent = round?.parentPlayerId === currentPlayerId;
+  const isNextParent = nextParent?.id === currentPlayerId;
+
   const handleAdvance = async () => {
-    if (!isHost || !round || isProcessing) {
+    if (!round || !isNextParent || isProcessing || !nextParent) {
       return;
     }
 
     setIsProcessing(true);
     try {
       if (!round.scoreFinalized) {
-        await finalizeRoundScores(room, round, players);
+        await finalizeRoundScores(room, round, players, currentPlayerId);
       }
 
-      const theme = nextTheme.trim() || '次のラウンドのお題';
-      await advanceGame(room, theme);
+      const theme = nextTheme.trim() || getRandomPrompt();
+      await advanceGame(room, theme, nextParent.id);
     } finally {
       setIsProcessing(false);
     }
@@ -68,7 +93,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
             ROUND {room.currentRoundNumber} / {room.settings.roundsCount}
           </div>
           <h3 className="text-3xl font-semibold text-white">正解はこちら</h3>
-          <p className="text-sm leading-6 text-slate-300">誰がどの曲を選んだかを公開します。ホストはこの画面で BEST 提出を選べます。</p>
+          <p className="text-sm leading-6 text-slate-300">
+            親役は {currentParent?.name || '不明'} でした。提出者と BEST 提出をここで確認します。
+          </p>
         </div>
 
         <div className="space-y-4">
@@ -83,7 +110,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
                   isBonusWinner ? 'border-yellow-300/50 bg-yellow-300/10' : 'border-white/10'
                 }`}
               >
-                <div className="absolute top-0 right-0 p-3 flex flex-col items-end gap-2">
+                <div className="absolute top-0 right-0 flex flex-col items-end gap-2 p-3">
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-primary-300/30 bg-primary-500/20 text-xs font-semibold text-primary-100">
                     正解
                   </span>
@@ -108,7 +135,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
                       <span className="text-sm font-semibold text-slate-100">{author?.name ?? '不明'} さん</span>
                     </div>
 
-                    {isHost && !round.scoreFinalized && (
+                    {isCurrentParent && !round.scoreFinalized && (
                       <button
                         type="button"
                         onClick={() => void updateRoundBonus(room.id, round.id, submission.id)}
@@ -132,19 +159,37 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
           })}
         </div>
 
-        {isHost && (
+        {!isLastRound && (
+          <Card className="bg-white/7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Next Parent</p>
+            <h4 className="mt-2 text-xl font-semibold text-white">
+              次ラウンドの親役は {nextParent?.name || '未定'} です
+            </h4>
+          </Card>
+        )}
+
+        {isNextParent ? (
           <div className="pt-8 text-center space-y-6">
             {!isLastRound && (
               <Card className="space-y-4">
                 <div className="text-left">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Next Theme</p>
-                  <h4 className="mt-2 text-xl font-semibold text-white">次のラウンドのお題を決める</h4>
+                  <h4 className="mt-2 text-xl font-semibold text-white">次のお題を決める</h4>
                 </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setNextTheme((current) => getRandomPrompt(current))}
+                >
+                  ランダムなお題を表示
+                </Button>
                 <Input
                   label="次のお題"
                   placeholder="例: ドライブで聴きたい曲"
                   value={nextTheme}
                   onChange={(event) => setNextTheme(event.target.value)}
+                  helperText="ランダム候補を手修正してから開始できます"
                 />
               </Card>
             )}
@@ -159,13 +204,21 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
               >
                 {isLastRound ? '最終結果を表示する' : '次のラウンドへ進む'}
               </Button>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 {isLastRound
                   ? 'これで全ラウンド終了です'
                   : `次は 第${room.currentRoundNumber + 1} ラウンドです`}
               </p>
             </div>
           </div>
+        ) : (
+          <Card className="bg-white/6 text-center">
+            <p className="text-sm font-medium text-slate-300">
+              {isLastRound
+                ? '次は最終結果です。親役が進めるまでお待ちください。'
+                : `${nextParent?.name || '次の親役'} がお題を決めるまでお待ちください。`}
+            </p>
+          </Card>
         )}
       </div>
     </Layout>

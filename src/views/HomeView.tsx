@@ -3,8 +3,13 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
+import {
+  DEFAULT_ROUNDS_COUNT,
+  DEFAULT_SCORING,
+  MAX_PLAYERS,
+} from '../constants/game';
 import { loginAnonymously } from '../firebase/auth';
-import { upsertPlayer } from '../firebase/player';
+import { getPlayerCount, upsertPlayer } from '../firebase/player';
 import { createRoom, findRoomByCode } from '../firebase/room';
 
 type View = 'home' | 'create' | 'join' | 'how-to';
@@ -16,7 +21,7 @@ interface HomeViewProps {
 
 const featureCards = [
   { title: '匿名で提出', body: '好きな曲を出しても、結果発表までは誰のものか分かりません。', tone: 'from-primary-400/24 to-primary-200/6' },
-  { title: 'オンライン向け', body: '3〜6人くらいの通話や Discord 集まりにちょうどいいテンポです。', tone: 'from-accent-400/24 to-accent-200/6' },
+  { title: 'オンライン向け', body: '2〜8人くらいの通話や Discord 集まりにちょうどいいテンポです。', tone: 'from-accent-400/24 to-accent-200/6' },
   { title: '数分で1ゲーム', body: 'ルーム作成から結果発表まで、軽く遊べるスピード感を意識しています。', tone: 'from-emerald-300/18 to-cyan-300/6' },
 ];
 
@@ -64,6 +69,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
         return;
       }
 
+      const playerCount = await getPlayerCount(roomId);
+      if (playerCount >= MAX_PLAYERS) {
+        setError(`このルームは満員です。最大${MAX_PLAYERS}人まで参加できます。`);
+        return;
+      }
+
       await upsertPlayer(roomId, playerId, playerName, false);
       onJoinRoom(roomId, playerName, false);
     } catch (joinError) {
@@ -93,12 +104,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
     try {
       const playerId = await loginAnonymously();
       const room = await createRoom(playerId, {
-        roundsCount: 3,
-        scoring: {
-          correctGuess: 2,
-          noOneGuessedMine: 2,
-          bestSubmissionBonus: 2,
-        },
+        roundsCount: DEFAULT_ROUNDS_COUNT,
+        scoring: DEFAULT_SCORING,
       });
 
       await upsertPlayer(room.id, playerId, playerName, true);
@@ -124,7 +131,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             <div className="relative space-y-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[11px] font-semibold text-slate-200">
                 <span className="inline-flex h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)]" />
-                3〜6人向け / オンライン推奨
+                2〜8人向け / オンライン推奨
               </div>
 
               <div className="space-y-3">
@@ -149,7 +156,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-2xl border border-white/10 bg-black/16 px-2 py-3">
-                  <p className="text-lg font-bold text-white">3-6</p>
+                  <p className="text-lg font-bold text-white">2-8</p>
                   <p className="text-[11px] text-slate-400">players</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/16 px-2 py-3">

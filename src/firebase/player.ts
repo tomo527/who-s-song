@@ -1,6 +1,8 @@
 import {
   collection,
   doc,
+  getDoc,
+  getDocs,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -17,6 +19,11 @@ export const upsertPlayer = async (
 ): Promise<void> => {
   const db = getDb();
   const playerRef = doc(db, 'rooms', roomId, 'players', playerId);
+  const snapshot = await getDoc(playerRef);
+  const joinedAt =
+    snapshot.exists() && typeof snapshot.data().joinedAt === 'number'
+      ? snapshot.data().joinedAt
+      : Date.now();
 
   await setDoc(
     playerRef,
@@ -24,6 +31,7 @@ export const upsertPlayer = async (
       name,
       score: 0,
       isHost,
+      joinedAt,
       lastSeenAt: serverTimestamp(),
     },
     { merge: true },
@@ -43,8 +51,20 @@ export const subscribePlayers = (roomId: string, callback: (players: Player[]) =
         }) as Player,
     );
 
-    callback(players);
+    callback(
+      players.sort(
+        (left, right) =>
+          (left.joinedAt ?? 0) - (right.joinedAt ?? 0) || left.name.localeCompare(right.name, 'ja'),
+      ),
+    );
   });
+};
+
+export const getPlayerCount = async (roomId: string): Promise<number> => {
+  const db = getDb();
+  const playersRef = collection(db, 'rooms', roomId, 'players');
+  const snapshot = await getDocs(playersRef);
+  return snapshot.size;
 };
 
 export const updateHeartbeat = async (roomId: string, playerId: string): Promise<void> => {

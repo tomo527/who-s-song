@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
@@ -12,6 +12,7 @@ import {
   updateRoundPhase,
 } from '../firebase/game';
 import { subscribePlayers } from '../firebase/player';
+import { getSubmittingPlayers } from '../logic/parentRotation';
 import type { GuessAnswer, Player, Round, Submission } from '../types';
 
 interface GameViewProps {
@@ -21,7 +22,7 @@ interface GameViewProps {
   isHost: boolean;
 }
 
-export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, isHost }) => {
+export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId }) => {
   const [round, setRound] = useState<Round | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -33,6 +34,12 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setSongName('');
+    setComment('');
+    setIsSubmitted(false);
+    setIsGuessSubmitted(false);
+    setGuesses([]);
+
     const unsubscribeRound = subscribeRound(roomId, roundId, setRound);
     const unsubscribePlayers = subscribePlayers(roomId, setPlayers);
     const unsubscribeSubmissions = subscribeSubmissions(roomId, roundId, (nextSubmissions) => {
@@ -60,8 +67,17 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
     };
   }, [playerId, roomId, roundId]);
 
+  const isParent = round?.parentPlayerId === playerId;
+  const submittingPlayers = useMemo(
+    () => getSubmittingPlayers(players, round?.parentPlayerId),
+    [players, round?.parentPlayerId],
+  );
+  const guessCandidates = submittingPlayers;
+  const allRequiredSubmissionsIn = submissions.length === submittingPlayers.length;
+  const parentPlayer = players.find((player) => player.id === round?.parentPlayerId);
+
   const handleSubmitSong = async () => {
-    if (!songName.trim()) {
+    if (!songName.trim() || isParent) {
       return;
     }
 
@@ -82,7 +98,7 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
   };
 
   const handleSubmitGuesses = async () => {
-    if (guesses.length < submissions.length) {
+    if (!isParent || guesses.length < submissions.length) {
       return;
     }
 
@@ -122,12 +138,39 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
                 <h3 className="mt-2 text-3xl font-semibold leading-tight text-white">{round.theme}</h3>
               </div>
               <p className="max-w-xl text-sm leading-6 text-slate-300">
-                連想しすぎず、でも自分っぽさは残る一曲を選ぶと盛り上がります。
+                親役は提出を待ち、親以外のプレイヤーが1曲ずつ匿名で提出します。
               </p>
             </div>
           </Card>
 
-          {!isSubmitted ? (
+          {isParent ? (
+            <Card className="space-y-5">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-100">Parent Role</p>
+                <h4 className="mt-2 text-xl font-semibold text-white">
+                  {parentPlayer?.name || '親役'}は提出せず、みんなの曲が揃うのを待ちます
+                </h4>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  全員分が揃ったら、親役だけが匿名曲の提出者を推理します。
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                <p className="text-sm font-medium text-slate-300">進行状況</p>
+                <p className="mt-2 text-lg font-semibold text-white">
+                  {submissions.length} / {submittingPlayers.length} 人が提出済み
+                </p>
+              </div>
+              {allRequiredSubmissionsIn && (
+                <Button
+                  size="lg"
+                  fullWidth
+                  onClick={() => void updateRoundPhase(roomId, roundId, 'guessing')}
+                >
+                  推理フェーズを始める
+                </Button>
+              )}
+            </Card>
+          ) : !isSubmitted ? (
             <>
               <Card className="space-y-5">
                 <div className="space-y-1">
@@ -153,85 +196,32 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
                 </Button>
               </Card>
 
-              <Card className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-slate-300">進行状況</p>
-                    <h4 className="text-lg font-semibold text-white">
-                      {submissions.length} / {players.length} 人が提出済み
-                    </h4>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Status</p>
-                    <p className="text-lg font-semibold text-white">
-                      {Math.round((submissions.length / Math.max(players.length, 1)) * 100)}%
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-                  {players.map((player) => {
-                    const hasSubmitted = submissions.some((submission) => submission.playerId === player.id);
-                    return (
-                      <div
-                        key={player.id}
-                        className={`rounded-2xl border px-3 py-4 text-center transition ${
-                          hasSubmitted
-                            ? 'border-emerald-400/40 bg-emerald-400/12 text-emerald-100'
-                            : 'border-white/10 bg-white/5 text-slate-300'
-                        }`}
-                      >
-                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-sm font-semibold">
-                          {hasSubmitted ? '✓' : player.name.charAt(0)}
-                        </div>
-                        <p className="mt-2 truncate text-xs font-medium">{player.name}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
+              <SubmissionProgressCard
+                players={players}
+                parentPlayerId={round.parentPlayerId}
+                submissions={submissions}
+                requiredCount={submittingPlayers.length}
+              />
             </>
           ) : (
-            <Card className="py-10 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] border border-emerald-400/30 bg-emerald-400/15 text-emerald-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              </div>
-              <h4 className="mt-6 text-2xl font-semibold text-white">提出できました</h4>
-              <p className="mt-2 text-sm leading-6 text-slate-300">全員分が揃うと、次は誰の曲かを当てる推理フェーズに進みます。</p>
-
-              <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4">
-                {players.map((player) => {
-                  const hasSubmitted = submissions.some((submission) => submission.playerId === player.id);
-                  return (
-                    <div
-                      key={player.id}
-                      className={`rounded-2xl border px-3 py-4 text-center transition ${
-                        hasSubmitted
-                          ? 'border-emerald-400/40 bg-emerald-400/12 text-emerald-100'
-                          : 'border-white/10 bg-white/5 text-slate-300'
-                      }`}
-                    >
-                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-sm font-semibold">
-                        {hasSubmitted ? '✓' : player.name.charAt(0)}
-                      </div>
-                      <p className="mt-2 truncate text-xs font-medium">{player.name}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {isHost && submissions.length === players.length && (
-                <div className="mt-8">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    onClick={() => void updateRoundPhase(roomId, roundId, 'guessing')}
-                  >
-                    推理フェーズを始める
-                  </Button>
+            <>
+              <Card className="py-10 text-center">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] border border-emerald-400/30 bg-emerald-400/15 text-emerald-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                 </div>
-              )}
-            </Card>
+                <h4 className="mt-6 text-2xl font-semibold text-white">提出できました</h4>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  親役が推理フェーズを始めるまで、このまま待機してください。
+                </p>
+              </Card>
+
+              <SubmissionProgressCard
+                players={players}
+                parentPlayerId={round.parentPlayerId}
+                submissions={submissions}
+                requiredCount={submittingPlayers.length}
+              />
+            </>
           )}
         </div>
       </Layout>
@@ -239,6 +229,19 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
   }
 
   if (round.phase === 'guessing') {
+    if (!isParent) {
+      return (
+        <Layout title="推理タイム">
+          <Card className="py-12 text-center">
+            <h3 className="text-2xl font-semibold text-white">親役が推理中です</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              {parentPlayer?.name || '親役'}が匿名曲の提出者を割り当てています。少しお待ちください。
+            </p>
+          </Card>
+        </Layout>
+      );
+    }
+
     return (
       <Layout title="推理タイム">
         <div className="space-y-6">
@@ -247,14 +250,16 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
             <div className="relative">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-100">Guess Phase</p>
               <h3 className="mt-3 text-2xl font-semibold text-white">{round.theme}</h3>
-              <p className="mt-2 text-sm text-slate-300">曲名とコメントをヒントに、誰が選んだかを予想してください。</p>
+              <p className="mt-2 text-sm text-slate-300">
+                親役だけが、匿名で並んだ曲を見て提出者を割り当てます。
+              </p>
             </div>
           </Card>
 
           <div className="text-center space-y-1">
-            <h3 className="text-xl font-semibold tracking-tight text-white">誰の曲かを予想してください</h3>
+            <h3 className="text-xl font-semibold tracking-tight text-white">誰がどの曲を出したか当ててください</h3>
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
-              同じ人を複数の曲に割り当てることはできません
+              親役自身は候補に出ず、同じ人を複数の曲に割り当てることもできません
             </p>
           </div>
 
@@ -263,8 +268,18 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] border border-emerald-400/30 bg-emerald-400/15 text-emerald-200">
                 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
-              <h4 className="mt-6 text-2xl font-semibold text-white">回答を送信しました</h4>
-              <p className="mt-2 text-sm leading-6 text-slate-300">全員の回答が揃ったら、結果発表に進みます。</p>
+              <h4 className="mt-6 text-2xl font-semibold text-white">推理を送信しました</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                内容を確認したら、結果発表に進めます。
+              </p>
+              <Button
+                variant="ghost"
+                fullWidth
+                className="mt-6"
+                onClick={() => void updateRoundPhase(roomId, roundId, 'revealing')}
+              >
+                結果発表へ進む
+              </Button>
             </Card>
           ) : (
             <>
@@ -285,8 +300,8 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mt-4">
-                      {players.map((player) => {
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      {guessCandidates.map((player) => {
                         const isSelected = guesses.some(
                           (guess) =>
                             guess.submissionId === submission.id && guess.guessedPlayerId === player.id,
@@ -295,22 +310,20 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
                           (guess) =>
                             guess.submissionId !== submission.id && guess.guessedPlayerId === player.id,
                         );
-                        const isOwnSong = submission.playerId === playerId && player.id === playerId;
 
                         return (
                           <button
                             type="button"
                             key={player.id}
-                            disabled={isAssignedElsewhere || isOwnSong}
+                            disabled={isAssignedElsewhere}
                             onClick={() => handleAssignGuess(submission.id, player.id)}
                             className={`
                               rounded-2xl border px-3 py-3 text-left text-sm font-medium transition
                               ${isSelected ? 'border-primary-400/50 bg-primary-500/20 text-white shadow-[0_16px_40px_rgba(56,130,246,0.22)]' : 'border-white/10 bg-white/5 text-slate-200'}
-                              ${(isAssignedElsewhere || isOwnSong) ? 'opacity-25' : 'hover:border-primary-300/40 hover:bg-white/10 active:scale-[0.98]'}
+                              ${isAssignedElsewhere ? 'opacity-25' : 'hover:border-primary-300/40 hover:bg-white/10 active:scale-[0.98]'}
                             `}
                           >
                             <span className="block font-semibold">{player.name}</span>
-                            {isOwnSong && <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] opacity-70">自分は選べません</span>}
                           </button>
                         );
                       })}
@@ -329,16 +342,6 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
                 >
                   推理を送信する
                 </Button>
-                {isHost && (
-                  <Button
-                    variant="ghost"
-                    fullWidth
-                    className="mt-4"
-                    onClick={() => void updateRoundPhase(roomId, roundId, 'revealing')}
-                  >
-                    ホストが結果発表へ進む
-                  </Button>
-                )}
               </div>
             </>
           )}
@@ -351,8 +354,62 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
     <Layout title="結果発表">
       <Card className="py-12 text-center">
         <h3 className="text-2xl font-semibold text-white">結果発表へ移動します</h3>
-        <p className="mt-3 text-sm leading-6 text-slate-300">ホストが結果画面に進めると、このまま自動で同期されます。</p>
+        <p className="mt-3 text-sm leading-6 text-slate-300">親役が結果画面に進めると、このまま自動で同期されます。</p>
       </Card>
     </Layout>
   );
 };
+
+function SubmissionProgressCard({
+  players,
+  parentPlayerId,
+  submissions,
+  requiredCount,
+}: {
+  players: Player[];
+  parentPlayerId: string;
+  submissions: Submission[];
+  requiredCount: number;
+}) {
+  return (
+    <Card className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-slate-300">進行状況</p>
+          <h4 className="text-lg font-semibold text-white">
+            {submissions.length} / {requiredCount} 人が提出済み
+          </h4>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Status</p>
+          <p className="text-lg font-semibold text-white">
+            {Math.round((submissions.length / Math.max(requiredCount, 1)) * 100)}%
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+        {players.map((player) => {
+          const isParent = player.id === parentPlayerId;
+          const hasSubmitted = submissions.some((submission) => submission.playerId === player.id);
+          return (
+            <div
+              key={player.id}
+              className={`rounded-2xl border px-3 py-4 text-center transition ${
+                isParent
+                  ? 'border-accent-300/40 bg-accent-400/12 text-accent-100'
+                  : hasSubmitted
+                    ? 'border-emerald-400/40 bg-emerald-400/12 text-emerald-100'
+                    : 'border-white/10 bg-white/5 text-slate-300'
+              }`}
+            >
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-sm font-semibold">
+                {isParent ? '親' : hasSubmitted ? '✓' : player.name.charAt(0)}
+              </div>
+              <p className="mt-2 truncate text-xs font-medium">{player.name}</p>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
