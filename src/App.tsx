@@ -1,31 +1,38 @@
-import { useState, useEffect } from 'react';
-import { HomeView } from './views/HomeView';
-import { LobbyView } from './views/LobbyView';
-import { GameView } from './views/GameView';
-import { ResultView } from './views/ResultView';
-import { FinalResultView } from './views/FinalResultView';
-import { useRoom } from './hooks/useRoom';
-import { loginAnonymously } from './firebase/auth';
+import { useEffect, useState } from 'react';
 import { subscribePlayers } from './firebase/player';
 import { subscribeRound } from './firebase/game';
+import { loginAnonymously } from './firebase/auth';
+import { firebaseConfigError } from './firebase/config';
+import { useRoom } from './hooks/useRoom';
 import type { Player, Round } from './types';
+import { FinalResultView } from './views/FinalResultView';
+import { GameView } from './views/GameView';
+import { HomeView } from './views/HomeView';
+import { LobbyView } from './views/LobbyView';
+import { ResultView } from './views/ResultView';
 
 const STORAGE_KEY = 'song_guess_game_state';
 
-function App() {
-  const [gameState, setGameState] = useState<{
-    roomId: string;
-    playerName: string;
-    isHost: boolean;
-    playerId?: string;
-  } | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
-  });
+type SavedGameState = {
+  roomId: string;
+  playerName: string;
+  isHost: boolean;
+  playerId?: string;
+};
 
-  const { room, loading: roomLoading } = useRoom(gameState?.roomId || '');
+function App() {
+  const [gameState, setGameState] = useState<SavedGameState | null>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? (JSON.parse(saved) as SavedGameState) : null;
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+  });
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentRound, setCurrentRound] = useState<Round | null>(null);
+  const { room, loading, error } = useRoom(gameState?.roomId || '');
 
   useEffect(() => {
     if (gameState) {
@@ -36,17 +43,19 @@ function App() {
   }, [gameState]);
 
   useEffect(() => {
-    if (gameState?.roomId) {
-      const unsubPlayers = subscribePlayers(gameState.roomId, setPlayers);
-      return () => unsubPlayers();
+    if (!gameState?.roomId || firebaseConfigError) {
+      return;
     }
+
+    return subscribePlayers(gameState.roomId, setPlayers);
   }, [gameState?.roomId]);
 
   useEffect(() => {
-    if (gameState?.roomId && room?.currentRoundId) {
-      const unsubRound = subscribeRound(gameState.roomId, room.currentRoundId, setCurrentRound);
-      return () => unsubRound();
+    if (!gameState?.roomId || !room?.currentRoundId || firebaseConfigError) {
+      return;
     }
+
+    return subscribeRound(gameState.roomId, room.currentRoundId, setCurrentRound);
   }, [gameState?.roomId, room?.currentRoundId]);
 
   const handleJoinRoom = async (roomId: string, playerName: string, isHost: boolean) => {
@@ -55,53 +64,64 @@ function App() {
   };
 
   if (!gameState) {
-    return <HomeView onJoinRoom={handleJoinRoom} />;
+    return <HomeView onJoinRoom={handleJoinRoom} startupError={firebaseConfigError} />;
   }
 
-  if (roomLoading) {
-    return <div className="min-h-screen flex items-center justify-center font-bold text-primary-500 animate-pulse">読み込み中...</div>;
-  }
-
-  if (!room) {
+  if (firebaseConfigError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <p className="mb-4 font-bold text-slate-500">ルームが見つかりません</p>
-        <button className="px-6 py-2 bg-primary-600 text-white rounded-2xl font-bold shadow-lg shadow-primary-200" onClick={() => setGameState(null)}>ホームに戻る</button>
+      <StartupErrorScreen
+        title="Firebase 設定エラー"
+        description="環境変数が不足しているため、ルーム情報を読み込めません。"
+        message={firebaseConfigError}
+        onBack={() => setGameState(null)}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center font-bold text-primary-500 animate-pulse">
+        読み込み中...
       </div>
     );
   }
 
-  const isActualHost = room && gameState?.playerId === room.hostId;
+  if (error) {
+    return (
+      <StartupErrorScreen
+        title="ルームの読み込みに失敗しました"
+        description="Firebase 設定または Firestore ルールを確認してください。"
+        message={error.message}
+        onBack={() => setGameState(null)}
+      />
+    );
+  }
 
-  // ゲーム終了時
+  if (!room) {
+    return (
+      <StartupErrorScreen
+        title="ルームが見つかりません"
+        description="保存されていたルームが削除されたか、アクセスできません。"
+        message={gameState.roomId}
+        onBack={() => setGameState(null)}
+      />
+    );
+  }
+
+  const isActualHost = gameState.playerId === room.hostId;
+
   if (room.status === 'finished') {
-    return (
-      <FinalResultView 
-        room={room} 
-        players={players} 
-        onBackToHome={() => setGameState(null)} 
-      />
-    );
+    return <FinalResultView room={room} players={players} onBackToHome={() => setGameState(null)} />;
   }
 
-  // 待機ロビー
   if (room.status === 'waiting') {
-    return (
-      <LobbyView 
-        room={room} 
-        playerName={gameState.playerName} 
-        isHost={isActualHost} 
-        onStartGame={() => {}} 
-      />
-    );
+    return <LobbyView room={room} isHost={isActualHost} onStartGame={() => {}} />;
   }
 
-  // ゲーム中
   if (room.status === 'active' && room.currentRoundId) {
-    // Reveal フェーズなら結果表示
     if (currentRound?.phase === 'revealing') {
       return (
-        <ResultView 
+        <ResultView
           room={room}
           roundId={room.currentRoundId}
           players={players}
@@ -110,9 +130,8 @@ function App() {
       );
     }
 
-    // それ以外（提出・推理）なら GameView
     return (
-      <GameView 
+      <GameView
         roomId={room.id}
         roundId={room.currentRoundId}
         playerId={gameState.playerId || ''}
@@ -122,7 +141,53 @@ function App() {
     );
   }
 
-  return null;
+  return (
+    <StartupErrorScreen
+      title="未対応のルーム状態です"
+      description="想定外の room.status または round.phase です。"
+      message={JSON.stringify(
+        {
+          roomStatus: room.status,
+          currentRoundId: room.currentRoundId,
+          currentRoundPhase: currentRound?.phase ?? null,
+        },
+        null,
+        2,
+      )}
+      onBack={() => setGameState(null)}
+    />
+  );
+}
+
+function StartupErrorScreen({
+  title,
+  description,
+  message,
+  onBack,
+}: {
+  title: string;
+  description: string;
+  message: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6">
+      <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-xl border border-slate-200 space-y-4">
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <p className="text-sm text-slate-600">{description}</p>
+        <code className="block rounded-xl bg-slate-950 text-slate-100 p-4 text-xs overflow-x-auto whitespace-pre-wrap">
+          {message}
+        </code>
+        <button
+          type="button"
+          className="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold"
+          onClick={onBack}
+        >
+          ホームに戻る
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default App;

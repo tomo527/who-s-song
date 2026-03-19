@@ -1,13 +1,18 @@
 {
-  "name": "-",
+  "name": "anonymous-setlist-guessing-game",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node ./scripts/run-build.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:staging": "vite --mode staging",
+    "build:staging": "node ./scripts/run-build.mjs staging"
   },
   "dependencies": {
     "firebase": "^12.10.0",
