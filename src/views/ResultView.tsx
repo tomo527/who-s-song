@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
 import { advanceGame, finalizeRoundScores, subscribeRound, subscribeSubmissions, updateRoundBonus } from '../firebase/game';
 import type { Player, Round, Room, Submission } from '../types';
@@ -49,7 +50,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
   if (!round) {
     return (
       <Layout title="結果発表">
-        <p className="text-slate-500">結果を読み込んでいます...</p>
+        <Card className="py-10 text-center">
+          <h2 className="text-xl font-semibold text-white">結果を読み込んでいます</h2>
+          <p className="mt-2 text-sm text-slate-300">提出内容とスコアを同期しています。</p>
+        </Card>
       </Layout>
     );
   }
@@ -59,12 +63,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
   return (
     <Layout title="結果発表">
       <div className="space-y-8 pb-12">
-        <div className="text-center space-y-2">
-          <div className="inline-block bg-slate-100 rounded-full px-3 py-1 text-[10px] font-bold text-slate-500 mb-1">
+        <div className="text-center space-y-3">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-slate-300 uppercase">
             ROUND {room.currentRoundNumber} / {room.settings.roundsCount}
           </div>
-          <h3 className="text-2xl font-black text-slate-800">正解はこちら</h3>
-          <p className="text-sm text-slate-500">誰がどの曲を選んだかを公開します。</p>
+          <h3 className="text-3xl font-semibold text-white">正解はこちら</h3>
+          <p className="text-sm leading-6 text-slate-300">誰がどの曲を選んだかを公開します。ホストはこの画面で BEST 提出を選べます。</p>
         </div>
 
         <div className="space-y-4">
@@ -76,15 +80,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
               <Card
                 key={submission.id}
                 className={`relative overflow-hidden border-2 transition-all ${
-                  isBonusWinner ? 'border-yellow-400 bg-yellow-50/30' : 'border-transparent'
+                  isBonusWinner ? 'border-yellow-300/50 bg-yellow-300/10' : 'border-white/10'
                 }`}
               >
                 <div className="absolute top-0 right-0 p-3 flex flex-col items-end gap-2">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-600 font-bold text-xs ring-4 ring-white">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-primary-300/30 bg-primary-500/20 text-xs font-semibold text-primary-100">
                     正解
                   </span>
                   {isBonusWinner && (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-400 text-white text-[10px] font-black rounded-lg shadow-sm">
+                    <span className="inline-flex items-center gap-1 rounded-xl bg-yellow-300 px-2 py-1 text-[10px] font-semibold text-slate-950 shadow-sm">
                       BEST
                     </span>
                   )}
@@ -92,26 +96,26 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
 
                 <div className="space-y-3">
                   <div className="pr-12">
-                    <p className="text-xs font-bold text-primary-500 uppercase tracking-tighter mb-1">Song</p>
-                    <h4 className="text-xl font-black text-slate-900 leading-tight">{submission.songName}</h4>
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-100">Song</p>
+                    <h4 className="text-2xl font-semibold leading-tight text-white">{submission.songName}</h4>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between border-t border-white/10 pt-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-[10px] font-bold text-primary-600">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-[11px] font-semibold text-slate-100">
                         {author?.name?.charAt(0) ?? '?'}
                       </div>
-                      <span className="text-sm font-black text-slate-700">{author?.name ?? '不明'} さん</span>
+                      <span className="text-sm font-semibold text-slate-100">{author?.name ?? '不明'} さん</span>
                     </div>
 
                     {isHost && !round.scoreFinalized && (
                       <button
                         type="button"
                         onClick={() => void updateRoundBonus(room.id, round.id, submission.id)}
-                        className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-colors ${
+                        className={`rounded-xl px-3 py-2 text-[11px] font-semibold transition ${
                           isBonusWinner
-                            ? 'bg-yellow-400 text-white'
-                            : 'bg-slate-100 text-slate-400 hover:bg-yellow-100 hover:text-yellow-600'
+                            ? 'bg-yellow-300 text-slate-950'
+                            : 'border border-white/10 bg-white/5 text-slate-300 hover:border-yellow-200/30 hover:bg-yellow-200/10 hover:text-yellow-100'
                         }`}
                       >
                         {isBonusWinner ? 'BEST選出中' : 'BESTにする'}
@@ -120,7 +124,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
                   </div>
 
                   {submission.comment && (
-                    <p className="text-xs text-slate-400 bg-white/50 p-2 rounded-xl italic">"{submission.comment}"</p>
+                    <p className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm italic text-slate-300">"{submission.comment}"</p>
                   )}
                 </div>
               </Card>
@@ -131,14 +135,14 @@ export const ResultView: React.FC<ResultViewProps> = ({ room, roundId, players, 
         {isHost && (
           <div className="pt-8 text-center space-y-6">
             {!isLastRound && (
-              <Card className="bg-slate-50 border-slate-100 p-4">
-                <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-tighter text-left">
-                  次のラウンドのお題
-                </label>
-                <input
-                  type="text"
+              <Card className="space-y-4">
+                <div className="text-left">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Next Theme</p>
+                  <h4 className="mt-2 text-xl font-semibold text-white">次のラウンドのお題を決める</h4>
+                </div>
+                <Input
+                  label="次のお題"
                   placeholder="例: ドライブで聴きたい曲"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-white focus:border-primary-400 outline-none font-bold text-slate-700 shadow-sm transition-all"
                   value={nextTheme}
                   onChange={(event) => setNextTheme(event.target.value)}
                 />

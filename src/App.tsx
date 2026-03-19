@@ -135,7 +135,6 @@ function App() {
         roomId={room.id}
         roundId={room.currentRoundId}
         playerId={gameState.playerId || ''}
-        playerName={gameState.playerName}
         isHost={isActualHost}
       />
     );
@@ -171,20 +170,25 @@ function StartupErrorScreen({
   onBack: () => void;
 }) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-xl border border-slate-200 space-y-4">
-        <h1 className="text-2xl font-bold">{title}</h1>
-        <p className="text-sm text-slate-600">{description}</p>
-        <code className="block rounded-xl bg-slate-950 text-slate-100 p-4 text-xs overflow-x-auto whitespace-pre-wrap">
-          {message}
-        </code>
-        <button
-          type="button"
-          className="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold"
-          onClick={onBack}
-        >
-          ホームに戻る
-        </button>
+    <div className="min-h-screen bg-[#08111f] px-6 py-12 text-white">
+      <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-3xl items-center justify-center">
+        <div className="w-full rounded-[2rem] border border-white/10 bg-white/8 p-6 shadow-[0_24px_80px_rgba(8,15,30,0.42)] backdrop-blur-xl sm:p-8">
+          <div className="mb-6 inline-flex rounded-full border border-red-300/20 bg-red-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-red-100">
+            Configuration Error
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{description}</p>
+          <code className="mt-6 block overflow-x-auto whitespace-pre-wrap rounded-[1.5rem] border border-white/10 bg-slate-950/80 p-4 text-xs text-slate-100">
+            {message}
+          </code>
+          <button
+            type="button"
+            className="mt-6 rounded-2xl bg-gradient-to-r from-primary-500 to-accent-400 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(56,130,246,0.3)] transition hover:brightness-105"
+            onClick={onBack}
+          >
+            ホームに戻る
+          </button>
+        </div>
       </div>
     </div>
   );

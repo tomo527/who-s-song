@@ -30,6 +30,8 @@ const getRankedPlayers = (players: Player[]): RankedPlayer[] => {
 export const FinalResultView: React.FC<FinalResultViewProps> = ({ players, onBackToHome }) => {
   const [copied, setCopied] = React.useState(false);
   const rankedPlayers = getRankedPlayers(players);
+  const podiumPlayers = rankedPlayers.filter((player) => player.rank <= 3);
+  const otherPlayers = rankedPlayers.filter((player) => player.rank > 3);
 
   const handleCopyResults = async () => {
     const lines = rankedPlayers.map((player) => `${player.rank}位 ${player.name} (${player.score}pt)`);
@@ -43,67 +45,74 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({ players, onBac
   return (
     <Layout title="最終結果">
       <div className="space-y-8 pb-12">
-        <div className="text-center py-6">
-          <div className="inline-block p-1 rounded-full bg-primary-50 mb-4 px-4">
-            <span className="text-xs font-bold text-primary-600 uppercase tracking-widest">Final Ranking</span>
+        <div className="py-4 text-center">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/8 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">
+            Final Ranking
           </div>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight">ランキング</h2>
+          <h2 className="mt-4 text-4xl font-semibold tracking-tight text-white">ランキング</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            最後まで遊んだ全員のスコアです。コピーしてそのままシェアできます。
+          </p>
         </div>
 
-        <div className="space-y-4">
-          {rankedPlayers.map((player) => {
-            const isTop3 = player.rank <= 3;
-            const rankColors = [
-              'bg-yellow-400 text-white',
-              'bg-slate-300 text-slate-700',
-              'bg-orange-300 text-white',
-            ];
+        <div className="grid gap-4 md:grid-cols-3">
+          {podiumPlayers.map((player) => {
+            const podiumStyle =
+              player.rank === 1
+                ? 'border-yellow-300/50 bg-yellow-300/12'
+                : player.rank === 2
+                  ? 'border-slate-300/30 bg-slate-200/10'
+                  : 'border-orange-300/40 bg-orange-300/10';
 
             return (
-              <Card
-                key={player.id}
-                className={`relative overflow-hidden transition-all duration-500 ${
-                  player.rank === 1 ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 my-6' : ''
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm ${
-                      isTop3 ? rankColors[player.rank - 1] : 'bg-slate-100 text-slate-400'
-                    }`}
-                  >
+              <Card key={player.id} className={`relative overflow-hidden text-center ${podiumStyle}`}>
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
+                <div className="relative py-3">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[1.5rem] border border-white/15 bg-white/10 text-2xl font-semibold text-white">
                     {player.rank}
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-400 leading-none mb-1">Player</p>
-                    <h4 className="text-xl font-black text-slate-800 truncate">{player.name}</h4>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-slate-400 leading-none mb-1">Score</p>
-                    <div className="text-2xl font-black text-primary-600">
-                      {player.score}
-                      <span className="text-xs ml-0.5">pt</span>
-                    </div>
+                  <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">Player</p>
+                  <h3 className="mt-2 text-2xl font-semibold text-white">{player.name}</h3>
+                  <div className="mt-5 text-4xl font-semibold text-white">
+                    {player.score}
+                    <span className="ml-1 text-sm text-slate-300">pt</span>
                   </div>
                 </div>
-
-                {player.rank === 1 && (
-                  <div className="absolute top-[-20px] right-[-20px] w-16 h-16 bg-primary-500/10 rounded-full blur-xl animate-pulse" />
-                )}
               </Card>
             );
           })}
         </div>
 
+        {otherPlayers.length > 0 && (
+          <Card className="space-y-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">All Players</p>
+              <h3 className="mt-2 text-xl font-semibold text-white">そのほかの順位</h3>
+            </div>
+            <div className="space-y-3">
+              {otherPlayers.map((player) => (
+                <div
+                  key={player.id}
+                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-lg font-semibold text-slate-100">
+                    {player.rank}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-semibold text-white">{player.name}</p>
+                  </div>
+                  <div className="text-right text-xl font-semibold text-primary-100">
+                    {player.score}
+                    <span className="ml-1 text-xs text-slate-400">pt</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         <div className="pt-12 space-y-4">
-          <Button
-            variant="primary"
-            fullWidth
-            onClick={handleCopyResults}
-            className="bg-slate-800 hover:bg-slate-900 border-none"
-          >
+          <Button variant="primary" fullWidth onClick={handleCopyResults}>
             {copied ? 'コピーしました' : '結果をコピーする'}
           </Button>
           <Button variant="secondary" fullWidth onClick={onBackToHome}>

@@ -18,7 +18,6 @@ interface GameViewProps {
   roomId: string;
   roundId: string;
   playerId: string;
-  playerName: string;
   isHost: boolean;
 }
 
@@ -99,7 +98,11 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
   if (!round) {
     return (
       <Layout title="ゲーム">
-        <p className="text-slate-500">ラウンド情報を読み込んでいます...</p>
+        <Card className="py-10 text-center">
+          <div className="mx-auto mb-4 h-12 w-12 rounded-2xl border border-white/10 bg-white/10" />
+          <h2 className="text-xl font-semibold text-white">ラウンド情報を読み込んでいます</h2>
+          <p className="mt-2 text-sm text-slate-300">ゲームの状態を同期しています。</p>
+        </Card>
       </Layout>
     );
   }
@@ -108,74 +111,127 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
     return (
       <Layout title="曲を提出">
         <div className="space-y-8">
-          <Card className="bg-primary-600 text-white">
-            <p className="text-xs font-bold text-primary-200 uppercase tracking-widest mb-2">今回のお題</p>
-            <h3 className="text-2xl font-black">{round.theme}</h3>
+          <Card className="overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-primary-500/30 via-accent-400/20 to-transparent blur-2xl" />
+            <div className="relative space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary-400/30 bg-primary-500/15 px-3 py-1 text-[11px] font-semibold tracking-[0.24em] text-primary-100 uppercase">
+                Submit Phase
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-300">今回のお題</p>
+                <h3 className="mt-2 text-3xl font-semibold leading-tight text-white">{round.theme}</h3>
+              </div>
+              <p className="max-w-xl text-sm leading-6 text-slate-300">
+                連想しすぎず、でも自分っぽさは残る一曲を選ぶと盛り上がります。
+              </p>
+            </div>
           </Card>
 
           {!isSubmitted ? (
-            <div className="space-y-6">
-              <Input
-                label="曲名"
-                placeholder="例: 夜に駆ける"
-                value={songName}
-                onChange={(event) => setSongName(event.target.value)}
-              />
-              <Input
-                label="ひとこと"
-                placeholder="任意。あとで結果画面に表示されます"
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-              />
-              <Button size="lg" fullWidth isLoading={loading} onClick={handleSubmitSong}>
-                提出する
-              </Button>
-            </div>
-          ) : (
-            <div className="text-center py-12 space-y-6">
-              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto ring-8 ring-green-50">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              </div>
-              <div className="space-y-2">
-                <h4 className="text-2xl font-black text-slate-800">提出完了</h4>
-                <p className="text-slate-500 font-bold">全員の提出が揃うまでお待ちください。</p>
-              </div>
+            <>
+              <Card className="space-y-5">
+                <div className="space-y-1">
+                  <h4 className="text-xl font-semibold text-white">匿名で曲を提出</h4>
+                  <p className="text-sm leading-6 text-slate-300">
+                    曲名は全員分が揃うまで伏せたままです。コメントは任意で添えられます。
+                  </p>
+                </div>
+                <Input
+                  label="曲名"
+                  placeholder="例: 夜に駆ける"
+                  value={songName}
+                  onChange={(event) => setSongName(event.target.value)}
+                />
+                <Input
+                  label="ひとこと"
+                  placeholder="任意。あとで結果画面に表示されます"
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
+                />
+                <Button size="lg" fullWidth isLoading={loading} onClick={handleSubmitSong}>
+                  この曲で提出する
+                </Button>
+              </Card>
 
-              <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
-                <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-tighter">Status</p>
-                <div className="flex flex-wrap justify-center gap-2">
+              <Card className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">進行状況</p>
+                    <h4 className="text-lg font-semibold text-white">
+                      {submissions.length} / {players.length} 人が提出済み
+                    </h4>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Status</p>
+                    <p className="text-lg font-semibold text-white">
+                      {Math.round((submissions.length / Math.max(players.length, 1)) * 100)}%
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                   {players.map((player) => {
                     const hasSubmitted = submissions.some((submission) => submission.playerId === player.id);
                     return (
                       <div
                         key={player.id}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                          hasSubmitted ? 'bg-green-500 text-white scale-110' : 'bg-slate-200 text-slate-400'
+                        className={`rounded-2xl border px-3 py-4 text-center transition ${
+                          hasSubmitted
+                            ? 'border-emerald-400/40 bg-emerald-400/12 text-emerald-100'
+                            : 'border-white/10 bg-white/5 text-slate-300'
                         }`}
                       >
-                        {hasSubmitted ? '✓' : player.name.charAt(0)}
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-sm font-semibold">
+                          {hasSubmitted ? '✓' : player.name.charAt(0)}
+                        </div>
+                        <p className="mt-2 truncate text-xs font-medium">{player.name}</p>
                       </div>
                     );
                   })}
                 </div>
-                <div className="mt-3 text-xs font-black text-slate-500">
-                  {submissions.length} / {players.length} 人が提出済み
-                </div>
+              </Card>
+            </>
+          ) : (
+            <Card className="py-10 text-center">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] border border-emerald-400/30 bg-emerald-400/15 text-emerald-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              </div>
+              <h4 className="mt-6 text-2xl font-semibold text-white">提出できました</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-300">全員分が揃うと、次は誰の曲かを当てる推理フェーズに進みます。</p>
+
+              <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                {players.map((player) => {
+                  const hasSubmitted = submissions.some((submission) => submission.playerId === player.id);
+                  return (
+                    <div
+                      key={player.id}
+                      className={`rounded-2xl border px-3 py-4 text-center transition ${
+                        hasSubmitted
+                          ? 'border-emerald-400/40 bg-emerald-400/12 text-emerald-100'
+                          : 'border-white/10 bg-white/5 text-slate-300'
+                      }`}
+                    >
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-sm font-semibold">
+                        {hasSubmitted ? '✓' : player.name.charAt(0)}
+                      </div>
+                      <p className="mt-2 truncate text-xs font-medium">{player.name}</p>
+                    </div>
+                  );
+                })}
               </div>
 
               {isHost && submissions.length === players.length && (
-                <div className="pt-4">
+                <div className="mt-8">
                   <Button
                     variant="primary"
                     size="lg"
                     fullWidth
                     onClick={() => void updateRoundPhase(roomId, roundId, 'guessing')}
                   >
-                    推理フェーズへ進む
+                    推理フェーズを始める
                   </Button>
                 </div>
               )}
-            </div>
+            </Card>
           )}
         </div>
       </Layout>
@@ -186,39 +242,45 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
     return (
       <Layout title="推理タイム">
         <div className="space-y-6">
-          <Card className="bg-primary-600 text-white py-4">
-            <p className="text-[10px] font-bold text-primary-200 uppercase tracking-widest mb-1">今回のお題</p>
-            <h3 className="text-xl font-black">{round.theme}</h3>
+          <Card className="overflow-hidden py-6">
+            <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-accent-400/25 via-primary-500/20 to-transparent blur-2xl" />
+            <div className="relative">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-100">Guess Phase</p>
+              <h3 className="mt-3 text-2xl font-semibold text-white">{round.theme}</h3>
+              <p className="mt-2 text-sm text-slate-300">曲名とコメントをヒントに、誰が選んだかを予想してください。</p>
+            </div>
           </Card>
 
           <div className="text-center space-y-1">
-            <h3 className="text-lg font-black text-slate-800 tracking-tight">誰の曲かを予想してください</h3>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
+            <h3 className="text-xl font-semibold tracking-tight text-white">誰の曲かを予想してください</h3>
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
               同じ人を複数の曲に割り当てることはできません
             </p>
           </div>
 
           {isGuessSubmitted ? (
-            <div className="text-center py-12 space-y-4">
-              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            <Card className="py-10 text-center">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] border border-emerald-400/30 bg-emerald-400/15 text-emerald-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
-              <h4 className="text-xl font-bold">回答を送信しました</h4>
-              <p className="text-slate-500">結果発表までお待ちください。</p>
-            </div>
+              <h4 className="mt-6 text-2xl font-semibold text-white">回答を送信しました</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-300">全員の回答が揃ったら、結果発表に進みます。</p>
+            </Card>
           ) : (
             <>
               <div className="space-y-4">
                 {submissions.map((submission, index) => (
-                  <Card key={submission.id} className="space-y-4">
+                  <Card key={submission.id} className="space-y-5">
                     <div className="flex items-start gap-3">
-                      <div className="flex-none w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-400">
+                      <div className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-sm font-semibold text-slate-200">
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-black text-lg text-slate-800 break-words">{submission.songName}</p>
+                        <p className="break-words text-xl font-semibold text-white">{submission.songName}</p>
                         {submission.comment && (
-                          <p className="text-sm text-slate-500 italic mt-1 leading-relaxed">"{submission.comment}"</p>
+                          <p className="mt-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm italic leading-relaxed text-slate-300">
+                            "{submission.comment}"
+                          </p>
                         )}
                       </div>
                     </div>
@@ -242,13 +304,13 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
                             disabled={isAssignedElsewhere || isOwnSong}
                             onClick={() => handleAssignGuess(submission.id, player.id)}
                             className={`
-                              py-2.5 px-3 rounded-xl text-xs font-black transition-all border-2
-                              ${isSelected ? 'bg-primary-600 border-primary-600 text-white shadow-lg shadow-primary-100 scale-[1.02]' : 'bg-white border-slate-100 text-slate-500'}
-                              ${(isAssignedElsewhere || isOwnSong) ? 'opacity-20 grayscale' : 'hover:border-primary-200 active:scale-95'}
+                              rounded-2xl border px-3 py-3 text-left text-sm font-medium transition
+                              ${isSelected ? 'border-primary-400/50 bg-primary-500/20 text-white shadow-[0_16px_40px_rgba(56,130,246,0.22)]' : 'border-white/10 bg-white/5 text-slate-200'}
+                              ${(isAssignedElsewhere || isOwnSong) ? 'opacity-25' : 'hover:border-primary-300/40 hover:bg-white/10 active:scale-[0.98]'}
                             `}
                           >
-                            {player.name}
-                            {isOwnSong && <span className="block text-[8px] opacity-70">自分は選べません</span>}
+                            <span className="block font-semibold">{player.name}</span>
+                            {isOwnSong && <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] opacity-70">自分は選べません</span>}
                           </button>
                         );
                       })}
@@ -265,7 +327,7 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
                   disabled={guesses.length < submissions.length || loading}
                   onClick={handleSubmitGuesses}
                 >
-                  回答を送信する
+                  推理を送信する
                 </Button>
                 {isHost && (
                   <Button
@@ -287,10 +349,10 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, i
 
   return (
     <Layout title="結果発表">
-      <div className="text-center py-20">
-        <h3 className="text-2xl font-bold mb-4">結果発表</h3>
-        <p className="text-slate-500">ホストが結果画面を開くのを待っています。</p>
-      </div>
+      <Card className="py-12 text-center">
+        <h3 className="text-2xl font-semibold text-white">結果発表へ移動します</h3>
+        <p className="mt-3 text-sm leading-6 text-slate-300">ホストが結果画面に進めると、このまま自動で同期されます。</p>
+      </Card>
     </Layout>
   );
 };
