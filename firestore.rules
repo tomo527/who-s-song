@@ -1,50 +1,54 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ルーム
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isHost(roomId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId == request.auth.uid;
+    }
+
+    function isRoomMember(roomId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/rooms/$(roomId)/players/$(request.auth.uid));
+    }
+
     match /rooms/{roomId} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && (
-        // ホストのみが設定やステータスを変更可能
-        resource.data.hostId == request.auth.uid ||
-        // 参加者が currentRoundId などを読み取るのはOK
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentRoundId', 'currentRoundNumber', 'status']))
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        isHost(roomId) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'currentRoundId',
+          'currentRoundNumber',
+          'status',
+        ])
       );
 
-      // プレイヤー
       match /players/{playerId} {
         allow read: if true;
-        allow create, update: if request.auth != null && request.auth.uid == playerId;
+        allow create, update: if isSignedIn() && request.auth.uid == playerId;
       }
 
-      // ラウンド
       match /rounds/{roundId} {
         allow read: if true;
-        allow create, update: if request.auth != null && get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId == request.auth.uid;
+        allow create, update: if isHost(roomId);
       }
 
-      // 提出曲
       match /submissions/{submissionId} {
-        // 自分のデータはいつでも読み書き可能。
-        // 他人のデータは、そのラウンドが 'revealing' フェーズ（結果発表）の時のみ読み取り可能。
-        allow read: if request.auth != null && (
-          resource.data.playerId == request.auth.uid ||
-          get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.phase == 'revealing'
-        );
-        allow create: if request.auth != null && request.resource.data.playerId == request.auth.uid;
-        allow update, delete: if false; // 基本的に修正・削除不可
+        allow read: if isRoomMember(roomId);
+        allow create: if isSignedIn() && request.resource.data.playerId == request.auth.uid;
+        allow update, delete: if false;
       }
 
-      // 推理（予想）
       match /guesses/{guessId} {
-        // 自分の予想はいつでも読み書き可能。
-        // 他人の予想は、そのラウンドのスコアが確定した（scoreFinalized）後のみ読み取り可能。
-        allow read: if request.auth != null && (
+        allow read: if isSignedIn() && (
           resource.data.playerId == request.auth.uid ||
           get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.scoreFinalized == true
         );
-        allow create, update: if request.auth != null && request.resource.data.playerId == request.auth.uid;
+        allow create, update: if isSignedIn() && request.resource.data.playerId == request.auth.uid;
         allow delete: if false;
       }
     }

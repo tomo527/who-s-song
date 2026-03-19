@@ -74,6 +74,8 @@ npm run dev
 3. Cloud Firestore を有効化する
 4. `firestore.rules` を Firebase に反映する
 
+`firestore.rules` を変更したあとは、Firebase CLI などでルールを再デプロイしてください。
+
 ## Cloudflare Pages 設定
 
 - Framework preset: `Vite`
@@ -82,6 +84,7 @@ npm run dev
 - Node.js version: `22`
 
 Cloudflare Pages の Environment Variables には、`.env.example` と同じ `VITE_FIREBASE_*` を登録してください。
+production / preview のどちらでも、`Build command` は `npm run build`、`Output directory` は `dist`、`Node.js version` は `22` を使います。
 
 ## 補足
 
