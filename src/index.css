@@ -28,10 +28,7 @@
   line-height: 1.5;
   font-weight: 400;
   color: #e5eefc;
-  background:
-    radial-gradient(circle at top, rgba(251, 84, 88, 0.18), transparent 30%),
-    radial-gradient(circle at 80% 20%, rgba(98, 146, 233, 0.22), transparent 22%),
-    linear-gradient(180deg, #081222 0%, #09111d 55%, #050914 100%);
+  background: #10213b;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -58,12 +55,8 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 80%);
-  opacity: 0.35;
+  background: rgba(255, 255, 255, 0.03);
+  opacity: 0.4;
 }
 
 button,

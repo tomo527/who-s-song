@@ -7,7 +7,6 @@ import {
   DEFAULT_ROOM_SETTINGS,
   MAX_PLAYERS,
   MIN_PLAYERS,
-  MINIMUM_GAME_TURNS,
 } from '../constants/game';
 import { loginAnonymously } from '../firebase/auth';
 import { getPlayerCount, upsertPlayer } from '../firebase/player';
@@ -61,7 +60,7 @@ const flowSteps = [
 const scoreIdeas = [
   '親として誰の曲かを正しく見抜けるほど高得点',
   '自分の選曲が親に「あなたらしい」と伝わっても加点',
-  'BEST の加点は控えめで、主役はあくまで相互理解',
+  'BEST に選ばれた曲にも追加で得点',
 ];
 
 export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) => {
@@ -159,7 +158,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
     return (
       <Layout showBack onBack={() => setView('home')} title="ルームを作る">
         <div className="space-y-5">
-          <Card className="bg-linear-to-br from-primary-500/20 to-accent-500/12">
+          <Card className="border-primary-300/30 bg-primary-500/12">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-100">Host Setup</p>
             <h3 className="mt-2 text-2xl font-semibold text-white">ジャンルを決めてルームを作成</h3>
             <p className="mt-2 text-sm leading-6 text-slate-300">
@@ -198,7 +197,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
     return (
       <Layout showBack onBack={() => setView('home')} title="ルームに参加する">
         <div className="space-y-5">
-          <Card className="bg-linear-to-br from-white/10 to-accent-500/10">
+          <Card className="border-accent-300/30 bg-accent-500/10">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">Quick Join</p>
             <h3 className="mt-2 text-2xl font-semibold text-white">コードを入れてすぐ参加</h3>
             <p className="mt-2 text-sm leading-6 text-slate-300">
@@ -236,17 +235,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
   return (
     <Layout>
       <div className="space-y-6 pb-10">
-        <section className="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-white/7 px-5 py-6 shadow-[0_28px_80px_-36px_rgba(8,18,34,0.95)]">
-          <div className="absolute -right-14 -top-10 h-36 w-36 rounded-full bg-primary-500/25 blur-3xl" />
-          <div className="absolute bottom-0 left-4 h-28 w-28 rounded-full bg-accent-500/18 blur-3xl" />
-          <div className="relative space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[11px] font-semibold text-slate-100">
-              <span className="inline-flex h-2 w-2 rounded-full bg-primary-300 shadow-[0_0_14px_rgba(251,84,88,0.8)]" />
-              3〜8人 / 1ゲーム 10〜20分 / 通話しながら遊びやすい
-            </div>
-
+        <section className="rounded-[2.25rem] border border-white/12 bg-white/10 px-5 py-6 shadow-[0_24px_60px_-34px_rgba(8,18,34,0.72)]">
+          <div className="space-y-5">
             <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary-100">Anonymous Setlist Guessing Game</p>
               <h2 className="max-w-[10ch] text-5xl font-black leading-[0.92] tracking-tight text-white">
                 誰の曲？
               </h2>
@@ -265,18 +256,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
               </Button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-2xl border border-white/10 bg-black/16 px-3 py-3">
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className="rounded-2xl border border-primary-300/24 bg-primary-500/10 px-3 py-3">
                 <p className="text-lg font-bold text-white">{MIN_PLAYERS}-{MAX_PLAYERS}</p>
                 <p className="text-[11px] text-slate-400">players</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/16 px-3 py-3">
+              <div className="rounded-2xl border border-accent-300/24 bg-accent-500/10 px-3 py-3">
                 <p className="text-lg font-bold text-white">10-20</p>
                 <p className="text-[11px] text-slate-400">minutes</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/16 px-3 py-3">
-                <p className="text-lg font-bold text-white">音楽 + 会話</p>
-                <p className="text-[11px] text-slate-400">voice chat</p>
               </div>
             </div>
           </div>
@@ -303,21 +290,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
         <section className="space-y-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Value</p>
-            <h3 className="mt-1 text-xl font-semibold text-white">ただ当てるだけじゃなく、理解し合う</h3>
-          </div>
-          <div className="grid gap-3">
-            {valueCards.map((card) => (
-              <Card key={card.title} className="bg-linear-to-br from-white/9 to-white/4">
-                <h4 className="text-base font-semibold text-white">{card.title}</h4>
-                <p className="mt-2 text-sm leading-6 text-slate-300">{card.body}</p>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-3">
-          <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">How To Play</p>
             <h3 className="mt-1 text-xl font-semibold text-white">遊び方</h3>
           </div>
@@ -325,7 +297,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             {flowSteps.map((step) => (
               <Card key={step.label}>
                 <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary-500 to-accent-500 text-sm font-bold text-white">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-500 text-sm font-bold text-white">
                     {step.label}
                   </div>
                   <div>
@@ -340,10 +312,25 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
         <section className="space-y-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Scoring</p>
-            <h3 className="mt-1 text-xl font-semibold text-white">スコアの考え方</h3>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Value</p>
+            <h3 className="mt-1 text-xl font-semibold text-white">ただ当てるだけじゃなく、理解し合う</h3>
           </div>
-          <Card className="bg-linear-to-br from-primary-500/12 to-accent-500/10">
+          <div className="grid gap-3">
+            {valueCards.map((card) => (
+              <Card key={card.title} className="border-white/12 bg-white/8">
+                <h4 className="text-base font-semibold text-white">{card.title}</h4>
+                <p className="mt-2 text-sm leading-6 text-slate-300">{card.body}</p>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Scoring</p>
+            <h3 className="mt-1 text-xl font-semibold text-white">得点ルール</h3>
+          </div>
+          <Card className="border-primary-300/24 bg-primary-500/10">
             <ul className="space-y-3 text-sm leading-6 text-slate-200">
               {scoreIdeas.map((idea) => (
                 <li key={idea} className="flex gap-3">
@@ -354,15 +341,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             </ul>
           </Card>
         </section>
-
-        <Card className="bg-white/6">
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-white">ゲームの長さ</h3>
-            <p className="text-sm leading-6 text-slate-300">
-              1ゲームは最低 {MINIMUM_GAME_TURNS} ターンです。親役が一周ぶん揃った最初のタイミングで終了するため、人数によって実際のターン数は少し伸びます。
-            </p>
-          </div>
-        </Card>
       </div>
     </Layout>
   );
