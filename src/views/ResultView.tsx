@@ -21,6 +21,10 @@ interface ResultViewProps {
   currentPlayerId: string;
 }
 
+const flatCardClass = 'border-2 border-slate-600/40 bg-slate-100 shadow-none hover:border-slate-600/40 hover:bg-slate-100';
+const accentCardClass = 'border-2 border-accent-500 bg-accent-50 shadow-none hover:border-accent-500 hover:bg-accent-50';
+const primaryCardClass = 'border-2 border-primary-400 bg-primary-50 shadow-none hover:border-primary-400 hover:bg-primary-50';
+
 export const ResultView: React.FC<ResultViewProps> = ({
   room,
   roundId,
@@ -56,10 +60,10 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
   if (!round) {
     return (
-      <Layout title="結果発表">
+      <Layout title="結果表示">
         <Card className="py-10 text-center">
-          <h2 className="text-xl font-semibold text-white">結果を読み込み中です</h2>
-          <p className="mt-2 text-sm text-slate-300">スコアと正解情報を取得しています。</p>
+          <h2 className="text-xl font-semibold text-slate-900">結果を読み込み中です</h2>
+          <p className="mt-2 text-sm text-slate-600">スコアと正解を準備しています。</p>
         </Card>
       </Layout>
     );
@@ -109,19 +113,19 @@ export const ResultView: React.FC<ResultViewProps> = ({
   };
 
   return (
-    <Layout title="結果発表">
+    <Layout title="結果表示">
       <div className="space-y-8 pb-12">
         <div className="space-y-3 text-center">
-          <div className="inline-flex rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">
-            TURN {room.currentRoundNumber}
+          <div className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+            Turn {room.currentRoundNumber}
           </div>
-          <h3 className="text-3xl font-semibold text-white">正解はこちら</h3>
-          <p className="text-sm leading-6 text-slate-300">
-            ジャンルは <span className="font-semibold text-white">{room.settings.genre || '未設定'}</span>、
+          <h3 className="text-3xl font-semibold text-slate-950">正解はこちら</h3>
+          <p className="text-sm leading-6 text-slate-600">
+            ジャンルは <span className="font-semibold text-slate-900">{room.settings.genre || '未設定'}</span>。
             このターンの親は {currentParent?.name || '未設定'} です。
           </p>
-          <p className="text-xs leading-5 text-slate-400">
-            最低 {MINIMUM_GAME_TURNS} ターン、現在の人数なら {finishTurn} ターンでゲーム終了です。
+          <p className="text-xs leading-5 text-slate-500">
+            最低 {MINIMUM_GAME_TURNS} ターン遊び、現在の人数では {finishTurn} ターンで終了します。
           </p>
         </div>
 
@@ -133,43 +137,45 @@ export const ResultView: React.FC<ResultViewProps> = ({
             return (
               <Card
                 key={submission.id}
-                className={`relative overflow-hidden border-2 transition-all ${
-                  isBonusWinner ? 'border-yellow-300/50 bg-yellow-300/10' : 'border-white/10'
+                className={`relative border-2 shadow-none ${
+                  isBonusWinner
+                    ? 'border-yellow-400 bg-yellow-50 hover:border-yellow-400 hover:bg-yellow-50'
+                    : 'border-slate-400 bg-slate-50 hover:border-slate-400 hover:bg-slate-50'
                 }`}
               >
-                <div className="absolute right-0 top-0 flex flex-col items-end gap-2 p-3">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-primary-300/30 bg-primary-500/20 text-xs font-semibold text-primary-100">
+                <div className="absolute right-4 top-4 flex items-center gap-2">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-primary-300 bg-white text-xs font-semibold text-primary-600">
                     正解
                   </span>
                   {isBonusWinner && (
-                    <span className="inline-flex items-center gap-1 rounded-xl bg-yellow-300 px-2 py-1 text-[10px] font-semibold text-slate-950">
+                    <span className="inline-flex items-center gap-1 rounded-xl border border-yellow-400 bg-yellow-200 px-2 py-1 text-[10px] font-semibold text-slate-900">
                       BEST
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-3">
-                  <div className="pr-12">
-                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-100">Song</p>
-                    <h4 className="text-2xl font-semibold leading-tight text-white">{submission.songName}</h4>
+                  <div className="pr-14">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-600">Song</p>
+                    <h4 className="text-2xl font-semibold leading-tight text-slate-950">{submission.songName}</h4>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                  <div className="flex items-center justify-between border-t border-slate-300 pt-3">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-[11px] font-semibold text-slate-100">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white text-[11px] font-semibold text-slate-700">
                         {author?.name?.charAt(0) ?? '?'}
                       </div>
-                      <span className="text-sm font-semibold text-slate-100">{author?.name ?? '不明'} さん</span>
+                      <span className="text-sm font-semibold text-slate-900">{author?.name ?? '不明'} さん</span>
                     </div>
 
                     {isCurrentParent && !round.scoreFinalized && (
                       <button
                         type="button"
                         onClick={() => void updateRoundBonus(room.id, round.id, submission.id)}
-                        className={`rounded-xl px-3 py-2 text-[11px] font-semibold transition ${
+                        className={`rounded-xl border px-3 py-2 text-[11px] font-semibold transition ${
                           isBonusWinner
-                            ? 'bg-yellow-300 text-slate-950'
-                            : 'border border-white/10 bg-white/5 text-slate-300 hover:border-yellow-200/30 hover:bg-yellow-200/10 hover:text-yellow-100'
+                            ? 'border-yellow-400 bg-yellow-300 text-slate-900'
+                            : 'border-slate-300 bg-white text-slate-700 hover:border-yellow-400 hover:bg-yellow-50'
                         }`}
                       >
                         {isBonusWinner ? 'BEST選択中' : 'BESTにする'}
@@ -178,7 +184,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
                   </div>
 
                   {submission.comment && (
-                    <p className="rounded-2xl border border-white/10 bg-white/5 p-3 text-sm italic text-slate-300">
+                    <p className="rounded-2xl border-2 border-slate-300 bg-white p-3 text-sm italic text-slate-600">
                       "{submission.comment}"
                     </p>
                   )}
@@ -189,27 +195,29 @@ export const ResultView: React.FC<ResultViewProps> = ({
         </div>
 
         {!isLastRound && (
-          <Card className="bg-white/7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Next Parent</p>
-            <h4 className="mt-2 text-xl font-semibold text-white">
+          <Card className={accentCardClass}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-500">Next Parent</p>
+            <h4 className="mt-2 text-xl font-semibold text-slate-900">
               次のターンの親は {nextParent?.name || '未定'} です
             </h4>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              次のターンへ進んだあと、その親が新しいお題を決めてから提出フェーズが始まります。
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              次の親が画面に進むと、新しいお題を決めてから提出フェーズが始まります。
             </p>
           </Card>
         )}
 
         {canFinalizeRound ? (
           <div className="space-y-6 pt-8 text-center">
-            <Card className="space-y-4">
-              <div className="text-left">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Finalize</p>
-                <h4 className="mt-2 text-xl font-semibold text-white">このターンの結果を確定する</h4>
+            <Card className={flatCardClass}>
+              <div className="space-y-4 text-left">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Finalize</p>
+                  <h4 className="mt-2 text-xl font-semibold text-slate-900">このターンの結果を確定する</h4>
+                </div>
+                <p className="text-sm leading-6 text-slate-600">
+                  BEST とスコアを確定すると、次のターンへ進めます。
+                </p>
               </div>
-              <p className="text-left text-sm leading-6 text-slate-300">
-                現在の親が BEST 選出とスコア計算を確定します。次のターンへ進む前に一度だけ実行してください。
-              </p>
             </Card>
 
             <Button
@@ -224,14 +232,16 @@ export const ResultView: React.FC<ResultViewProps> = ({
           </div>
         ) : canStartNextRound ? (
           <div className="space-y-6 pt-8 text-center">
-            <Card className="space-y-4">
-              <div className="text-left">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Next Turn</p>
-                <h4 className="mt-2 text-xl font-semibold text-white">次のターンへ進む</h4>
+            <Card className={primaryCardClass}>
+              <div className="space-y-4 text-left">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Next Turn</p>
+                  <h4 className="mt-2 text-xl font-semibold text-slate-900">次のターンへ進む</h4>
+                </div>
+                <p className="text-sm leading-6 text-slate-600">
+                  次の親が画面に進み、お題設定から新しいターンを始めます。
+                </p>
               </div>
-              <p className="text-left text-sm leading-6 text-slate-300">
-                次の親がゲーム画面で新しいお題を決めます。ここではターンを進めるだけです。
-              </p>
             </Card>
 
             <div className="space-y-3">
@@ -244,21 +254,23 @@ export const ResultView: React.FC<ResultViewProps> = ({
               >
                 次のターンへ進む
               </Button>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                次は第{room.currentRoundNumber + 1}ターンです
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                次は {room.currentRoundNumber + 1} ターン目です
               </p>
             </div>
           </div>
         ) : canFinishGame ? (
           <div className="space-y-6 pt-8 text-center">
-            <Card className="space-y-4">
-              <div className="text-left">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Finish</p>
-                <h4 className="mt-2 text-xl font-semibold text-white">最終結果へ進む</h4>
+            <Card className={primaryCardClass}>
+              <div className="space-y-4 text-left">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Finish</p>
+                  <h4 className="mt-2 text-xl font-semibold text-slate-900">最終結果へ進む</h4>
+                </div>
+                <p className="text-sm leading-6 text-slate-600">
+                  すべてのターンが終了しました。ランキングと統計を表示します。
+                </p>
               </div>
-              <p className="text-left text-sm leading-6 text-slate-300">
-                全ターン終了後の集計画面へ進みます。ランキングと統計を表示します。
-              </p>
             </Card>
 
             <Button
@@ -272,14 +284,14 @@ export const ResultView: React.FC<ResultViewProps> = ({
             </Button>
           </div>
         ) : (
-          <Card className="bg-white/6 text-center">
-            <p className="text-sm font-medium text-slate-300">
+          <Card className={`${flatCardClass} text-center`}>
+            <p className="text-sm font-medium text-slate-600">
               {isLastRound
                 ? round.scoreFinalized
                   ? `${currentParent?.name || '親'} が最終結果へ進めるまでお待ちください。`
                   : `${currentParent?.name || '親'} が結果を確定するまでお待ちください。`
                 : round.scoreFinalized
-                  ? `${nextParent?.name || '次の親'} が次のターンを開始するまでお待ちください。`
+                  ? `${nextParent?.name || '次の親'} が次のターンを始めるまでお待ちください。`
                   : `${currentParent?.name || '親'} が結果を確定するまでお待ちください。`}
             </p>
           </Card>

@@ -9,7 +9,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, title, showBack, onBack }) => {
   return (
-    <div className="min-h-screen text-slate-50 selection:bg-primary-300/30">
+    <div className="min-h-screen bg-[#f7f8fc] text-slate-900 selection:bg-primary-300/30">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/92">
         <div className="mx-auto flex h-18 max-w-md items-center gap-3 px-4">
           {showBack && (
