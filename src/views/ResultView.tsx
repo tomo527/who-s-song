@@ -196,7 +196,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
 
         {!isLastRound && (
           <Card className={accentCardClass}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-500">Next Parent</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-500">Next Game Master</p>
             <h4 className="mt-2 text-xl font-semibold text-slate-900">
               次のターンの親は {nextParent?.name || '未定'} です
             </h4>

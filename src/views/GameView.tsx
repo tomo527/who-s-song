@@ -172,7 +172,7 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
                 <Card className={accentCardClass}>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Parent Controls</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Game Master Controls</p>
                       <h4 className="mt-2 text-xl font-semibold text-slate-900">
                         {parentPlayer?.name || '親'} がこのターンのお題を決めます
                       </h4>
@@ -241,14 +241,14 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
               <h3 className="mt-2 text-3xl font-semibold leading-tight text-slate-950">{round.theme}</h3>
             </div>
             <p className="max-w-xl text-sm leading-6 text-slate-600">
-              親以外の全員が、このお題に合う1曲を匿名で提出します。
+              親以外の全員が、このお題に合う曲を匿名で提出します。
             </p>
           </Card>
 
           {isParent ? (
             <Card className={`${accentCardClass} space-y-5`}>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-500">Parent Role</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-500">Game Master Role</p>
                 <h4 className="mt-2 text-xl font-semibold text-slate-900">
                   {parentPlayer?.name || '親'} は提出せず、みんなの曲がそろうのを待ちます
                 </h4>

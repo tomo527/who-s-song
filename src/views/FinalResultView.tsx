@@ -285,15 +285,15 @@ function PlayerStatsCard({ stat }: { stat: PlayerFinalStats }) {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <MetricBlock
-          label="総合理解率"
+          label="総合正答率"
           value={formatRate(stat.overallHitRate, stat.parentCorrect + stat.identifiedCorrect, stat.parentTotal + stat.identifiedTotal)}
         />
         <MetricBlock
-          label="親役の的中率"
+          label="親ターンの時に当てた割合"
           value={formatRate(stat.parentHitRate, stat.parentCorrect, stat.parentTotal)}
         />
         <MetricBlock
-          label="自分らしさ伝達率"
+          label="プレイヤー側で当ててもらった割合"
           value={formatRate(stat.identifiedRate, stat.identifiedCorrect, stat.identifiedTotal)}
         />
       </div>

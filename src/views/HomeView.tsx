@@ -22,15 +22,15 @@ interface HomeViewProps {
 const valueCards = [
   {
     title: '相手の気持ちを読む',
-    body: 'どんな曲を選びそうか、なぜその一曲を出したのか。選曲の理由ごと想像するゲームです。',
+    body: 'どんな曲を選びそうか、なぜその1曲を出したのか。選曲の理由ごと想像するゲームです。',
   },
   {
     title: '通話しながら進めやすい',
-    body: '1ターンごとの操作は短く、会話を止めずに回せます。オンライン飲みや Discord 集まり向けです。',
+    body: '1ターンごとの操作は短く、会話を止めずに回せます。DiscordやXのスペースなど、オンラインでの集まりに向いています。',
   },
   {
     title: '理解し合うほど強い',
-    body: '親として見抜けることも、自分らしい選曲が伝わることも得点になります。',
+    body: '親として見抜くことも、自分らしい選曲が伝わることも得点になります。',
   },
 ];
 
@@ -272,7 +272,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 <p className="text-[11px] text-slate-500">players</p>
               </div>
               <div className="rounded-2xl border-2 border-accent-500 bg-accent-100 px-3 py-3 transition-colors hover:border-accent-500 active:border-accent-500">
-                <p className="text-lg font-bold text-slate-900">10-20</p>
+                <p className="text-lg font-bold text-slate-900">50-60</p>
                 <p className="text-[11px] text-slate-500">minutes</p>
               </div>
             </div>

@@ -89,10 +89,10 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-stretch">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9.5rem] sm:items-stretch">
               <div className="min-w-0 rounded-[1.5rem] border-2 border-slate-400 bg-slate-50 px-4 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Room Code</p>
-                <p className="mt-2 min-w-0 text-[2.2rem] leading-none font-black tracking-[0.12em] text-slate-950 sm:text-[1.95rem] sm:tracking-[0.08em] lg:text-[2.2rem] lg:tracking-[0.1em]">
+                <p className="mt-2 min-w-0 text-[2rem] leading-none font-extrabold tracking-[0.08em] text-slate-950 sm:text-[1.65rem] sm:tracking-[0.04em] lg:text-[1.9rem] lg:tracking-[0.06em]">
                   {room.roomCode}
                 </p>
                 <p className="mt-3 text-sm text-slate-600">
@@ -100,7 +100,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:w-[10rem] sm:grid-cols-1">
+              <div className="grid grid-cols-2 gap-3 sm:w-[9.5rem] sm:grid-cols-1">
                 <div className="rounded-[1.5rem] border-2 border-primary-400 bg-primary-50 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-500">Players</p>
                   <p className="mt-2 text-2xl font-semibold text-slate-900">{participantsLabel}</p>
@@ -161,7 +161,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           <Card className="border-2 border-accent-500 bg-accent-50 shadow-none hover:border-accent-500 hover:bg-accent-50">
             <div className="space-y-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Parent Controls</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Game Master Controls</p>
                 <h3 className="mt-2 text-xl font-semibold text-slate-900">ゲームを開始する</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   開始後、このターンの親であるあなたが最初のお題を決めます。非親はお題確定後に曲を提出します。
