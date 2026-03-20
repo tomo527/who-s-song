@@ -90,9 +90,11 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-stretch">
-              <div className="rounded-[1.5rem] border-2 border-slate-400 bg-slate-50 px-4 py-4">
+              <div className="min-w-0 rounded-[1.5rem] border-2 border-slate-400 bg-slate-50 px-4 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Room Code</p>
-                <p className="mt-2 text-4xl font-black tracking-[0.18em] text-slate-950">{room.roomCode}</p>
+                <p className="mt-2 min-w-0 text-[2.2rem] leading-none font-black tracking-[0.12em] text-slate-950 sm:text-[1.95rem] sm:tracking-[0.08em] lg:text-[2.2rem] lg:tracking-[0.1em]">
+                  {room.roomCode}
+                </p>
                 <p className="mt-3 text-sm text-slate-600">
                   ジャンル: <span className="font-semibold text-slate-900">{room.settings.genre || '未設定'}</span>
                 </p>
