@@ -17,17 +17,17 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center gap-2 rounded-[1.35rem] font-semibold tracking-tight transition duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55';
+    'inline-flex items-center justify-center gap-2 rounded-[1.35rem] border font-semibold tracking-tight transition duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55';
 
   const variants = {
     primary:
-      'bg-linear-to-r from-primary-500 to-accent-500 text-white shadow-[0_18px_40px_-18px_rgba(59,130,246,0.8)] hover:brightness-110',
+      'border-primary-500 bg-primary-500 text-white focus-visible:ring-primary-300 focus-visible:ring-offset-white hover:bg-primary-600 active:bg-primary-700',
     secondary:
-      'bg-white/10 text-white border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] hover:bg-white/14',
+      'border-accent-500 bg-accent-500 text-white focus-visible:ring-accent-300 focus-visible:ring-offset-white hover:bg-accent-700 active:bg-accent-700',
     outline:
-      'bg-transparent border border-white/14 text-slate-200 hover:bg-white/8 hover:border-white/24',
+      'border-slate-300 bg-white text-slate-700 focus-visible:ring-slate-200 focus-visible:ring-offset-white hover:bg-slate-50 hover:border-slate-400',
     ghost:
-      'bg-transparent text-slate-300 hover:bg-white/8 hover:text-white',
+      'border-transparent bg-transparent text-slate-600 focus-visible:ring-slate-200 focus-visible:ring-offset-white hover:bg-slate-100 hover:text-slate-900',
   };
 
   const sizes = {

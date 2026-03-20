@@ -157,20 +157,21 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
     return (
       <Layout showBack onBack={() => setView('home')} title="ルームを作る">
         <div className="space-y-5">
-          <Card className="border-primary-300/30 bg-primary-500/12">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-100">Host Setup</p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">ジャンルを決めてルームを作成</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
+          <Card className="border-primary-200 bg-white">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-500">Host Setup</p>
+            <h3 className="mt-2 text-2xl font-semibold text-slate-900">ジャンルを決めてルームを作成</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               先に共通ジャンルを決めておくと、お題を出した瞬間に会話が始まりやすくなります。
             </p>
           </Card>
 
-          <Card>
+          <Card className="border-slate-200 bg-white">
             <div className="space-y-4">
               <Input
                 label="表示名"
                 placeholder="例: たろう"
                 helperText="ルーム内で表示される名前です"
+                tone="light"
                 value={playerName}
                 onChange={(event) => setPlayerName(event.target.value)}
               />
@@ -178,10 +179,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 label="今回のジャンル"
                 placeholder="例: 邦ロック / ボカロ / アニソン"
                 helperText="ゲーム全体の共通ジャンルです。ロビーであとから変更できます"
+                tone="light"
                 value={genre}
                 onChange={(event) => setGenre(event.target.value)}
               />
-              {error && <p className="text-sm font-semibold text-red-200">{error}</p>}
+              {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
               <Button size="xl" fullWidth isLoading={loading} onClick={handleCreate}>
                 ルームを作成して進む
               </Button>
@@ -196,20 +198,21 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
     return (
       <Layout showBack onBack={() => setView('home')} title="ルームに参加する">
         <div className="space-y-5">
-          <Card className="border-accent-300/30 bg-accent-500/10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">Quick Join</p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">コードを入れてすぐ参加</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
+          <Card className="border-accent-200 bg-white">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Quick Join</p>
+            <h3 className="mt-2 text-2xl font-semibold text-slate-900">コードを入れてすぐ参加</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               通話中でも迷わないよう、参加導線は最短にしています。コードと表示名だけ入力してください。
             </p>
           </Card>
 
-          <Card>
+          <Card className="border-slate-200 bg-white">
             <div className="space-y-4">
               <Input
                 label="ルームコード"
                 placeholder="例: AB12CD"
                 helperText="大文字のまま入力するとスムーズです"
+                tone="light"
                 value={roomCode}
                 onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
               />
@@ -217,11 +220,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 label="表示名"
                 placeholder="例: じろう"
                 helperText="あとから誰か分かる名前にしておくと遊びやすいです"
+                tone="light"
                 value={playerName}
                 onChange={(event) => setPlayerName(event.target.value)}
               />
-              {error && <p className="text-sm font-semibold text-red-200">{error}</p>}
-              <Button size="xl" fullWidth isLoading={loading} onClick={handleJoin}>
+              {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+              <Button size="xl" variant="secondary" fullWidth isLoading={loading} onClick={handleJoin}>
                 参加する
               </Button>
             </div>
@@ -250,19 +254,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Button
-                size="xl"
-                className="border border-primary-500 bg-none bg-primary-500 text-white shadow-none hover:bg-primary-600"
-                onClick={() => setView('create')}
-              >
+              <Button size="xl" onClick={() => setView('create')}>
                 ルームを作る
               </Button>
-              <Button
-                size="xl"
-                variant="secondary"
-                className="border border-accent-500 bg-accent-500 text-white shadow-none hover:bg-accent-700 hover:text-white"
-                onClick={() => setView('join')}
-              >
+              <Button size="xl" variant="secondary" onClick={() => setView('join')}>
                 ルームに参加する
               </Button>
             </div>
