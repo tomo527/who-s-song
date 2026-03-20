@@ -1,51 +1,48 @@
-import type { Submission, Guess, Player, RoomSettings } from "../types";
+import type { Guess, Player, RoomSettings, Submission } from '../types';
 
-/**
- * 採点ロジックを実行し、各プレイヤーのスコア増分を計算します。
- */
 export const calculateScores = (
   players: Player[],
   submissions: Submission[],
   guesses: Guess[],
   scoring: RoomSettings['scoring'],
-  bonusWinnerSubmissionId?: string
+  bonusWinnerSubmissionId?: string,
 ): Record<string, number> => {
   const scoreMap: Record<string, number> = {};
 
-  // 全プレイヤーのスコア増分を初期化
-  players.forEach(p => scoreMap[p.id] = 0);
+  for (const player of players) {
+    scoreMap[player.id] = 0;
+  }
 
-  // 1. 推理的中ボーナス
-  guesses.forEach(guess => {
-    const playerWhoGuessed = guess.playerId;
-    guess.answers.forEach(answer => {
-      const targetSubmission = submissions.find(s => s.id === answer.submissionId);
+  for (const guess of guesses) {
+    for (const answer of guess.answers) {
+      const targetSubmission = submissions.find((submission) => submission.id === answer.submissionId);
       if (targetSubmission && targetSubmission.playerId === answer.guessedPlayerId) {
-        // 正解
-        scoreMap[playerWhoGuessed] = (scoreMap[playerWhoGuessed] || 0) + scoring.correctGuess;
+        scoreMap[guess.playerId] = (scoreMap[guess.playerId] || 0) + scoring.correctGuess;
       }
-    });
-  });
+    }
+  }
 
-  // 2. 「自分の曲を誰にも当てられなかった」ボーナス
-  submissions.forEach(submission => {
+  // 互換維持のため設定キー noOneGuessedMine は残す。
+  // 現ルールでは「親役に自分らしい選曲として正しく見抜かれた提出曲」に加点する。
+  for (const submission of submissions) {
     const ownerId = submission.playerId;
-    const isGuessedByAnyone = guesses.some(guess => 
-      guess.playerId !== ownerId && // 自分自身による予想は除外
-      guess.answers.some(a => a.submissionId === submission.id && a.guessedPlayerId === ownerId)
+    const guessedByParent = guesses.some((guess) =>
+      guess.answers.some(
+        (answer) =>
+          answer.submissionId === submission.id && answer.guessedPlayerId === ownerId,
+      ),
     );
 
-    if (!isGuessedByAnyone) {
+    if (guessedByParent) {
       scoreMap[ownerId] = (scoreMap[ownerId] || 0) + scoring.noOneGuessedMine;
     }
-  });
+  }
 
-  // 3. お題に合っている一番の曲ボーナス（主催者選出）
   if (bonusWinnerSubmissionId) {
-    const winnerSubmission = submissions.find(s => s.id === bonusWinnerSubmissionId);
+    const winnerSubmission = submissions.find((submission) => submission.id === bonusWinnerSubmissionId);
     if (winnerSubmission) {
-      const winnerId = winnerSubmission.playerId;
-      scoreMap[winnerId] = (scoreMap[winnerId] || 0) + scoring.bestSubmissionBonus;
+      scoreMap[winnerSubmission.playerId] =
+        (scoreMap[winnerSubmission.playerId] || 0) + scoring.bestSubmissionBonus;
     }
   }
 

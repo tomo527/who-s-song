@@ -5,13 +5,11 @@ import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
 import {
   subscribePlayerGuess,
-  subscribeRound,
   subscribeSubmissions,
   submitGuess,
   submitSong,
   updateRoundPhase,
 } from '../firebase/game';
-import { subscribePlayers } from '../firebase/player';
 import { getSubmittingPlayers } from '../logic/parentRotation';
 import type { GuessAnswer, Player, Round, Submission } from '../types';
 
@@ -20,12 +18,13 @@ interface GameViewProps {
   roundId: string;
   playerId: string;
   isHost: boolean;
+  roomGenre: string;
+  round: Round | null;
+  players: Player[];
 }
 
-export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId }) => {
-  const [round, setRound] = useState<Round | null>(null);
+export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, roomGenre, round, players }) => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
   const [songName, setSongName] = useState('');
   const [comment, setComment] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -40,8 +39,6 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId })
     setIsGuessSubmitted(false);
     setGuesses([]);
 
-    const unsubscribeRound = subscribeRound(roomId, roundId, setRound);
-    const unsubscribePlayers = subscribePlayers(roomId, setPlayers);
     const unsubscribeSubmissions = subscribeSubmissions(roomId, roundId, (nextSubmissions) => {
       setSubmissions(nextSubmissions);
 
@@ -52,20 +49,24 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId })
         setComment(mySubmission.comment || '');
       }
     });
-    const unsubscribeGuess = subscribePlayerGuess(roomId, roundId, playerId, (guess) => {
+
+    return () => {
+      unsubscribeSubmissions();
+    };
+  }, [playerId, roomId, roundId]);
+
+  useEffect(() => {
+    if (round?.parentPlayerId !== playerId || round.phase !== 'guessing') {
+      return;
+    }
+
+    return subscribePlayerGuess(roomId, roundId, playerId, (guess) => {
       if (guess?.answers) {
         setGuesses(guess.answers);
         setIsGuessSubmitted(true);
       }
     });
-
-    return () => {
-      unsubscribeRound();
-      unsubscribePlayers();
-      unsubscribeSubmissions();
-      unsubscribeGuess();
-    };
-  }, [playerId, roomId, roundId]);
+  }, [playerId, roomId, roundId, round?.parentPlayerId, round?.phase]);
 
   const isParent = round?.parentPlayerId === playerId;
   const submittingPlayers = useMemo(
@@ -134,6 +135,9 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId })
                 Submit Phase
               </div>
               <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  ジャンル {roomGenre || '未設定'}
+                </p>
                 <p className="text-sm font-medium text-slate-300">今回のお題</p>
                 <h3 className="mt-2 text-3xl font-semibold leading-tight text-white">{round.theme}</h3>
               </div>
@@ -249,6 +253,7 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId })
             <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-accent-400/25 via-primary-500/20 to-transparent blur-2xl" />
             <div className="relative">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-100">Guess Phase</p>
+              <p className="mt-2 text-xs text-slate-400">ジャンル {roomGenre || '未設定'}</p>
               <h3 className="mt-3 text-2xl font-semibold text-white">{round.theme}</h3>
               <p className="mt-2 text-sm text-slate-300">
                 親役だけが、匿名で並んだ曲を見て提出者を割り当てます。

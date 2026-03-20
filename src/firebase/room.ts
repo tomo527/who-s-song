@@ -25,6 +25,7 @@ export const createRoom = async (hostId: string, settings: RoomSettings): Promis
     hostId,
     currentRoundId: '',
     currentRoundNumber: 0,
+    currentGameId: 1,
     status: 'waiting',
     settings,
     createdAt: serverTimestamp(),

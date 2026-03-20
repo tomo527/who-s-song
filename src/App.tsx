@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { subscribePlayers } from './firebase/player';
 import { subscribeRound } from './firebase/game';
-import { loginAnonymously } from './firebase/auth';
 import { firebaseConfigError } from './firebase/config';
+import { waitForAuthReady } from './firebase/auth';
 import { useRoom } from './hooks/useRoom';
 import type { Player, Round } from './types';
 import { FinalResultView } from './views/FinalResultView';
@@ -20,65 +20,154 @@ type SavedGameState = {
   playerId?: string;
 };
 
-function App() {
-  const [gameState, setGameState] = useState<SavedGameState | null>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? (JSON.parse(saved) as SavedGameState) : null;
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
+const readSavedGameState = (): SavedGameState | null => {
+  try {
+    const sessionSaved = sessionStorage.getItem(STORAGE_KEY);
+    if (sessionSaved) {
+      return JSON.parse(sessionSaved) as SavedGameState;
+    }
+
+    const legacySaved = localStorage.getItem(STORAGE_KEY);
+    if (!legacySaved) {
       return null;
     }
-  });
+
+    const parsed = JSON.parse(legacySaved) as SavedGameState;
+    sessionStorage.setItem(STORAGE_KEY, legacySaved);
+    localStorage.removeItem(STORAGE_KEY);
+    return parsed;
+  } catch {
+    sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+};
+
+function App() {
+  const [gameState, setGameState] = useState<SavedGameState | null>(() => readSavedGameState());
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentRound, setCurrentRound] = useState<Round | null>(null);
+  const [authResolved, setAuthResolved] = useState(() => !readSavedGameState());
+  const [identityError, setIdentityError] = useState<string | null>(null);
   const { room, loading, error } = useRoom(gameState?.roomId || '');
 
   useEffect(() => {
     if (gameState) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+      localStorage.removeItem(STORAGE_KEY);
     } else {
+      sessionStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_KEY);
     }
   }, [gameState]);
 
   useEffect(() => {
-    if (!gameState?.roomId || firebaseConfigError) {
+    if (!gameState || firebaseConfigError) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void waitForAuthReady()
+      .then((uid) => {
+        if (cancelled) {
+          return;
+        }
+
+        if (!uid) {
+          setIdentityError('匿名認証の復元に失敗しました。もう一度ルームに入り直してください。');
+          setAuthResolved(true);
+          return;
+        }
+
+        if (gameState.playerId && gameState.playerId !== uid) {
+          setIdentityError('保存されていたプレイヤー情報と現在の匿名認証が一致しません。もう一度ルームに入り直してください。');
+          setAuthResolved(true);
+          return;
+        }
+
+        if (!gameState.playerId) {
+          setGameState((currentState) => (currentState ? { ...currentState, playerId: uid } : currentState));
+        }
+
+        setIdentityError(null);
+        setAuthResolved(true);
+      })
+      .catch((authError) => {
+        if (cancelled) {
+          return;
+        }
+
+        setIdentityError(
+          authError instanceof Error
+            ? authError.message
+            : '匿名認証の復元に失敗しました。もう一度ルームに入り直してください。',
+        );
+        setAuthResolved(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gameState]);
+
+  useEffect(() => {
+    if (!gameState?.roomId || firebaseConfigError || identityError) {
       return;
     }
 
     return subscribePlayers(gameState.roomId, setPlayers);
-  }, [gameState?.roomId]);
+  }, [gameState?.roomId, identityError]);
 
   useEffect(() => {
-    if (!gameState?.roomId || !room?.currentRoundId || firebaseConfigError) {
+    if (!gameState?.roomId || !room?.currentRoundId || firebaseConfigError || identityError) {
       return;
     }
 
     return subscribeRound(gameState.roomId, room.currentRoundId, setCurrentRound);
-  }, [gameState?.roomId, room?.currentRoundId]);
+  }, [gameState?.roomId, room?.currentRoundId, identityError]);
 
-  const handleJoinRoom = async (roomId: string, playerName: string, isHost: boolean) => {
-    const playerId = await loginAnonymously();
+  const handleJoinRoom = (roomId: string, playerName: string, isHost: boolean, playerId: string) => {
+    setIdentityError(null);
+    setAuthResolved(false);
     setGameState({ roomId, playerName, isHost, playerId });
   };
 
+  const handleResetSession = () => {
+    setIdentityError(null);
+    setAuthResolved(true);
+    setGameState(null);
+  };
+
+  const authReady = !gameState || firebaseConfigError ? true : authResolved;
+
   if (!gameState) {
     return <HomeView onJoinRoom={handleJoinRoom} startupError={firebaseConfigError} />;
+  }
+
+  if (identityError) {
+    return (
+      <StartupErrorScreen
+        title="プレイヤー情報を復元できませんでした"
+        description="保存されていたプレイヤー情報と現在の匿名認証が一致しません。再参加して同じプレイヤーとして入り直してください。"
+        message={identityError}
+        onBack={handleResetSession}
+      />
+    );
   }
 
   if (firebaseConfigError) {
     return (
       <StartupErrorScreen
         title="Firebase 設定エラー"
-        description="環境変数が不足しているため、ルーム情報を読み込めません。"
+        description="必要な環境変数が不足しているため、ルーム情報を読み込めません。"
         message={firebaseConfigError}
-        onBack={() => setGameState(null)}
+        onBack={handleResetSession}
       />
     );
   }
 
-  if (loading) {
+  if (!authReady || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center font-bold text-primary-500 animate-pulse">
         読み込み中...
@@ -92,7 +181,7 @@ function App() {
         title="ルームの読み込みに失敗しました"
         description="Firebase 設定または Firestore ルールを確認してください。"
         message={error.message}
-        onBack={() => setGameState(null)}
+        onBack={handleResetSession}
       />
     );
   }
@@ -101,26 +190,34 @@ function App() {
     return (
       <StartupErrorScreen
         title="ルームが見つかりません"
-        description="保存されていたルームが削除されたか、アクセスできません。"
+        description="指定されていたルームが削除されたか、アクセスできません。"
         message={gameState.roomId}
-        onBack={() => setGameState(null)}
+        onBack={handleResetSession}
       />
     );
   }
 
-  const isActualHost = gameState.playerId === room.hostId;
+  const currentPlayerId = gameState.playerId || '';
+  const isActualHost = currentPlayerId === room.hostId;
 
   if (room.status === 'finished') {
-    return <FinalResultView room={room} players={players} onBackToHome={() => setGameState(null)} />;
+    return (
+      <FinalResultView
+        room={room}
+        players={players}
+        currentPlayerId={currentPlayerId}
+        onBackToHome={handleResetSession}
+      />
+    );
   }
 
   if (room.status === 'waiting') {
     return (
       <LobbyView
         room={room}
+        players={players}
         isHost={isActualHost}
-        currentPlayerId={gameState.playerId || ''}
-        onStartGame={() => {}}
+        currentPlayerId={currentPlayerId}
       />
     );
   }
@@ -131,8 +228,9 @@ function App() {
         <ResultView
           room={room}
           roundId={room.currentRoundId}
+          round={currentRound}
           players={players}
-          currentPlayerId={gameState.playerId || ''}
+          currentPlayerId={currentPlayerId}
         />
       );
     }
@@ -141,8 +239,11 @@ function App() {
       <GameView
         roomId={room.id}
         roundId={room.currentRoundId}
-        playerId={gameState.playerId || ''}
+        playerId={currentPlayerId}
         isHost={isActualHost}
+        roomGenre={room.settings.genre || ''}
+        round={currentRound}
+        players={players}
       />
     );
   }
@@ -160,7 +261,7 @@ function App() {
         null,
         2,
       )}
-      onBack={() => setGameState(null)}
+      onBack={handleResetSession}
     />
   );
 }

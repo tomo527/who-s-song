@@ -3,6 +3,7 @@ export type RoundPhase = 'submitting' | 'guessing' | 'revealing';
 
 export interface RoomSettings {
   roundsCount: number;
+  genre: string;
   theme?: string;
   scoring: {
     correctGuess: number;
@@ -17,6 +18,7 @@ export interface Room {
   hostId: string;
   currentRoundId: string;
   currentRoundNumber: number; // 追加: 現在のラウンド番号 (1-indexed)
+  currentGameId: number;
   status: GameStatus;
   settings: RoomSettings;
   createdAt: number;
@@ -33,6 +35,7 @@ export interface Player {
 
 export interface Round {
   id: string;
+  gameId: number;
   theme: string;
   phase: RoundPhase;
   parentPlayerId: string;
@@ -45,6 +48,7 @@ export interface Round {
 
 export interface Submission {
   id: string;
+  gameId: number;
   roundId: string;
   playerId: string; // 内部管理用
   songName: string;
@@ -58,6 +62,7 @@ export interface GuessAnswer {
 
 export interface Guess {
   id: string; // playerId + roundId の組み合わせ
+  gameId: number;
   roundId: string;
   playerId: string;
   answers: GuessAnswer[];

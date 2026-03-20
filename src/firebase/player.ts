@@ -20,17 +20,18 @@ export const upsertPlayer = async (
   const db = getDb();
   const playerRef = doc(db, 'rooms', roomId, 'players', playerId);
   const snapshot = await getDoc(playerRef);
+  const existingPlayer = snapshot.exists() ? (snapshot.data() as Partial<Player>) : null;
   const joinedAt =
-    snapshot.exists() && typeof snapshot.data().joinedAt === 'number'
-      ? snapshot.data().joinedAt
+    existingPlayer && typeof existingPlayer.joinedAt === 'number'
+      ? existingPlayer.joinedAt
       : Date.now();
 
   await setDoc(
     playerRef,
     {
       name,
-      score: 0,
-      isHost,
+      score: typeof existingPlayer?.score === 'number' ? existingPlayer.score : 0,
+      isHost: Boolean(existingPlayer?.isHost) || isHost,
       joinedAt,
       lastSeenAt: serverTimestamp(),
     },

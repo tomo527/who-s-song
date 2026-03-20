@@ -21,16 +21,30 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(get(/databases/$(database)/documents/rooms/$(roomId)).data.currentRoundId)).data.parentPlayerId == request.auth.uid;
     }
 
+    function isRequestedRoundParent(roomId) {
+      return isSignedIn()
+        && request.resource.data.currentRoundId != ''
+        && exists(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(request.resource.data.currentRoundId))
+        && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(request.resource.data.currentRoundId)).data.parentPlayerId == request.auth.uid;
+    }
+
     match /rooms/{roomId} {
       allow read: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
         isHost(roomId) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'currentRoundId',
-          'currentRoundNumber',
-          'status',
-        ])
+        (
+          isRoomMember(roomId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'currentRoundId',
+            'currentRoundNumber',
+            'status',
+          ]) &&
+          (
+            isCurrentParent(roomId) ||
+            isRequestedRoundParent(roomId)
+          )
+        )
       );
 
       match /players/{playerId} {
@@ -65,8 +79,14 @@ service cloud.firestore {
 
       match /guesses/{guessId} {
         allow read: if isSignedIn() && (
-          resource.data.playerId == request.auth.uid ||
-          get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.scoreFinalized == true
+          isCurrentParent(roomId) ||
+          (
+            resource != null &&
+            (
+              resource.data.playerId == request.auth.uid ||
+              get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.scoreFinalized == true
+            )
+          )
         );
         allow create, update: if isSignedIn()
           && request.resource.data.playerId == request.auth.uid
