@@ -326,10 +326,19 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             <h3 className="mt-1 text-xl font-semibold text-slate-900">ただ当てるだけじゃなく、理解し合う</h3>
           </div>
           <div className="grid gap-3">
-            {valueCards.map((card) => (
+            {valueCards.map((card, index) => (
               <Card key={card.title} className="border-2 border-slate-600/40 bg-slate-100 shadow-none hover:border-slate-600/40 hover:bg-slate-100">
-                <h4 className="text-base font-semibold text-slate-900">{card.title}</h4>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{card.body}</p>
+                <div className="space-y-3">
+                  <div className="space-y-2 border-b border-slate-300 pb-3">
+                    <span className="inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-primary-600">
+                      {`POINT ${String(index + 1).padStart(2, '0')}`}
+                    </span>
+                    <h4 className="border-l-4 border-primary-500 pl-3 text-base font-semibold text-slate-900">
+                      {card.title}
+                    </h4>
+                  </div>
+                  <p className="text-sm leading-6 text-slate-600">{card.body}</p>
+                </div>
               </Card>
             ))}
           </div>

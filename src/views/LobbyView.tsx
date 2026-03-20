@@ -64,8 +64,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
   return (
     <Layout title="ロビー">
-      <div className="rounded-[2rem] border-2 border-slate-600/40 bg-white p-5 text-slate-900">
-        <div className="space-y-5 pb-5">
+      <div className="space-y-5 pb-10 text-slate-900">
         <Card className={flatCardClass}>
           <div className="space-y-5">
             <div className="space-y-2">
@@ -76,7 +75,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-stretch">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-stretch">
               <div className="rounded-[1.5rem] border-2 border-slate-400 bg-slate-50 px-4 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Room Code</p>
                 <p className="mt-2 text-4xl font-black tracking-[0.18em] text-slate-950">{room.roomCode}</p>
@@ -85,7 +84,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:w-[12rem] sm:grid-cols-1">
+              <div className="grid grid-cols-2 gap-3 sm:w-[10rem] sm:grid-cols-1">
                 <div className="rounded-[1.5rem] border-2 border-primary-400 bg-primary-50 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-500">Players</p>
                   <p className="mt-2 text-2xl font-semibold text-slate-900">{participantsLabel}</p>
@@ -220,7 +219,6 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             ))}
           </div>
         </Card>
-        </div>
       </div>
     </Layout>
   );
