@@ -32,7 +32,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   const gameEndTurn = getGameEndTurn(players.length, room.settings.roundsCount || MINIMUM_GAME_TURNS);
   const canStart = players.length >= MIN_PLAYERS && Boolean(room.settings.genre.trim()) && Boolean(currentParent);
 
-  const flatCardClass = 'border-slate-400/70 bg-white shadow-none hover:border-slate-400/70 hover:bg-white';
+  const flatCardClass = 'border-2 border-slate-600/40 bg-slate-100 shadow-none hover:border-slate-600/40 hover:bg-slate-100';
 
   const updateRoomSettings = async (values: Partial<Room['settings']>) => {
     const db = getDb();
@@ -64,7 +64,8 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
   return (
     <Layout title="ロビー">
-      <div className="space-y-5 pb-10 text-slate-900">
+      <div className="rounded-[2rem] border-2 border-slate-600/40 bg-white p-5 text-slate-900">
+        <div className="space-y-5 pb-5">
         <Card className={flatCardClass}>
           <div className="space-y-5">
             <div className="space-y-2">
@@ -76,7 +77,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-stretch">
-              <div className="rounded-[1.5rem] border border-slate-300 bg-slate-50 px-4 py-4">
+              <div className="rounded-[1.5rem] border-2 border-slate-400 bg-slate-50 px-4 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Room Code</p>
                 <p className="mt-2 text-4xl font-black tracking-[0.18em] text-slate-950">{room.roomCode}</p>
                 <p className="mt-3 text-sm text-slate-600">
@@ -85,11 +86,11 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:w-[12rem] sm:grid-cols-1">
-                <div className="rounded-[1.5rem] border border-primary-300 bg-primary-50 px-4 py-4">
+                <div className="rounded-[1.5rem] border-2 border-primary-400 bg-primary-50 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-500">Players</p>
                   <p className="mt-2 text-2xl font-semibold text-slate-900">{participantsLabel}</p>
                 </div>
-                <div className="rounded-[1.5rem] border border-accent-300 bg-accent-100 px-4 py-4">
+                <div className="rounded-[1.5rem] border-2 border-accent-400 bg-accent-100 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-500">Finish</p>
                   <p className="mt-2 text-2xl font-semibold text-slate-900">Turn {gameEndTurn}</p>
                 </div>
@@ -112,7 +113,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
         </Card>
 
         {isHost && (
-          <Card className="border-primary-300 bg-white shadow-none hover:border-primary-300 hover:bg-white">
+          <Card className="border-2 border-primary-500 bg-primary-100 shadow-none hover:border-primary-500 hover:bg-primary-100">
             <div className="space-y-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-500">Host Controls</p>
@@ -142,7 +143,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
         )}
 
         {isCurrentParent ? (
-          <Card className="border-accent-300 bg-white shadow-none hover:border-accent-300 hover:bg-white">
+          <Card className="border-2 border-accent-500 bg-accent-50 shadow-none hover:border-accent-500 hover:bg-accent-50">
             <div className="space-y-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Parent Controls</p>
@@ -185,7 +186,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Players</p>
               <h3 className="mt-1 text-xl font-semibold text-slate-900">参加メンバー</h3>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <div className="inline-flex items-center gap-2 rounded-full border-2 border-emerald-400 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
               募集中
             </div>
@@ -196,7 +197,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               <div
                 key={player.id}
                 className={`flex items-center justify-between rounded-[1.35rem] border px-4 py-3 ${
-                  player.isHost ? 'border-primary-300 bg-primary-50' : 'border-slate-300 bg-slate-50'
+                  player.isHost ? 'border-2 border-primary-400 bg-primary-50' : 'border-2 border-slate-400 bg-slate-50'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -219,6 +220,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             ))}
           </div>
         </Card>
+        </div>
       </div>
     </Layout>
   );

@@ -279,7 +279,7 @@ export const finalizeRoundScores = async (
 
 export const advanceGame = async (
   room: Room,
-  nextTheme: string,
+  theme: string,
   parentPlayerId: string,
   playerCount: number,
 ): Promise<void> => {
@@ -291,7 +291,7 @@ export const advanceGame = async (
     return;
   }
 
-  await createRound(room.id, nextTheme, room.currentRoundNumber + 1, parentPlayerId, gameId);
+  await createRound(room.id, theme, room.currentRoundNumber + 1, parentPlayerId, gameId);
 };
 
 export const restartGame = async (

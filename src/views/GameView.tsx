@@ -147,11 +147,12 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
 
   if (round.phase === 'submitting') {
     if (!isThemeReady) {
-      const flatCardClass = 'border-slate-400/70 bg-white shadow-none hover:border-slate-400/70 hover:bg-white';
+      const flatCardClass = 'border-2 border-slate-600/40 bg-slate-100 shadow-none hover:border-slate-600/40 hover:bg-slate-100';
 
       return (
         <Layout title="お題を決める">
-          <div className="space-y-5 pb-10 text-slate-900">
+          <div className="rounded-[2rem] border-2 border-slate-600/40 bg-white p-5 text-slate-900">
+            <div className="space-y-5 pb-5">
             <Card className={flatCardClass}>
               <div className="space-y-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Theme Setup</p>
@@ -164,7 +165,7 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
             </Card>
 
             {isParent ? (
-              <Card className="border-accent-300 bg-white shadow-none hover:border-accent-300 hover:bg-white">
+              <Card className="border-2 border-accent-500 bg-accent-50 shadow-none hover:border-accent-500 hover:bg-accent-50">
                 <div className="space-y-4">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Parent Controls</p>
@@ -213,6 +214,7 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
                 </div>
               </Card>
             )}
+            </div>
           </div>
         </Layout>
       );
