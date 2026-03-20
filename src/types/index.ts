@@ -1,9 +1,12 @@
 export type GameStatus = 'waiting' | 'active' | 'finished';
 export type RoundPhase = 'submitting' | 'guessing' | 'revealing';
+export type TimeLimitSetting = 120 | 300 | null;
 
 export interface RoomSettings {
   roundsCount: number;
   genre: string;
+  submitTimeLimit: TimeLimitSetting;
+  guessTimeLimit: TimeLimitSetting;
   scoring: {
     correctGuess: number;
     noOneGuessedMine: number;
@@ -27,6 +30,7 @@ export interface Player {
   name: string;
   score: number;
   isHost: boolean;
+  isActive?: boolean;
   joinedAt?: number;
   lastSeenAt: number;
 }

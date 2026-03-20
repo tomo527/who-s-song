@@ -3,6 +3,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
+import { formatTimeLimit } from '../constants/game';
 import { getRandomPrompt } from '../constants/prompts';
 import {
   subscribePlayerGuess,
@@ -13,7 +14,7 @@ import {
   updateRoundTheme,
 } from '../firebase/game';
 import { getSubmittingPlayers } from '../logic/parentRotation';
-import type { GuessAnswer, Player, Round, Submission } from '../types';
+import type { GuessAnswer, Player, Round, Submission, TimeLimitSetting } from '../types';
 
 interface GameViewProps {
   roomId: string;
@@ -21,6 +22,8 @@ interface GameViewProps {
   playerId: string;
   isHost: boolean;
   roomGenre: string;
+  submitTimeLimit: TimeLimitSetting;
+  guessTimeLimit: TimeLimitSetting;
   round: Round | null;
   players: Player[];
 }
@@ -31,7 +34,16 @@ const primaryCardClass = 'border-2 border-primary-400 bg-primary-50 shadow-none 
 const accentCardClass = 'border-2 border-accent-500 bg-accent-50 shadow-none hover:border-accent-500 hover:bg-accent-50';
 const successCardClass = 'border-2 border-emerald-400 bg-emerald-50 shadow-none hover:border-emerald-400 hover:bg-emerald-50';
 
-export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, roomGenre, round, players }) => {
+export const GameView: React.FC<GameViewProps> = ({
+  roomId,
+  roundId,
+  playerId,
+  roomGenre,
+  submitTimeLimit,
+  guessTimeLimit,
+  round,
+  players,
+}) => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [draftTheme, setDraftTheme] = useState(() => getRandomPrompt());
   const [songName, setSongName] = useState('');
@@ -243,6 +255,9 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
             <p className="max-w-xl text-sm leading-6 text-slate-600">
               親以外の全員が、このお題に合う曲を匿名で提出します。
             </p>
+            <div className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+              提出時間: {formatTimeLimit(submitTimeLimit)}
+            </div>
           </Card>
 
           {isParent ? (
@@ -358,6 +373,9 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
             <p className="mt-2 text-sm text-slate-600">
               誰の曲かを1つずつ割り当ててください。同じ人を複数の曲に重ねて選ぶことはできません。
             </p>
+            <div className="mt-3 inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+              Game Master 推理時間: {formatTimeLimit(guessTimeLimit)}
+            </div>
           </Card>
 
           <div className="space-y-1 text-center">

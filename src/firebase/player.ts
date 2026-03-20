@@ -32,6 +32,7 @@ export const upsertPlayer = async (
       name,
       score: typeof existingPlayer?.score === 'number' ? existingPlayer.score : 0,
       isHost: Boolean(existingPlayer?.isHost) || isHost,
+      isActive: true,
       joinedAt,
       lastSeenAt: serverTimestamp(),
     },
@@ -53,10 +54,12 @@ export const subscribePlayers = (roomId: string, callback: (players: Player[]) =
     );
 
     callback(
-      players.sort(
+      players
+        .filter((player) => player.isActive !== false)
+        .sort(
         (left, right) =>
           (left.joinedAt ?? 0) - (right.joinedAt ?? 0) || left.name.localeCompare(right.name, 'ja'),
-      ),
+        ),
     );
   });
 };
@@ -65,7 +68,10 @@ export const getPlayerCount = async (roomId: string): Promise<number> => {
   const db = getDb();
   const playersRef = collection(db, 'rooms', roomId, 'players');
   const snapshot = await getDocs(playersRef);
-  return snapshot.size;
+  return snapshot.docs.filter((playerDoc) => {
+    const player = playerDoc.data() as Partial<Player>;
+    return player.isActive !== false;
+  }).length;
 };
 
 export const updateHeartbeat = async (roomId: string, playerId: string): Promise<void> => {
@@ -73,6 +79,16 @@ export const updateHeartbeat = async (roomId: string, playerId: string): Promise
   const playerRef = doc(db, 'rooms', roomId, 'players', playerId);
 
   await updateDoc(playerRef, {
+    lastSeenAt: serverTimestamp(),
+  });
+};
+
+export const deactivatePlayer = async (roomId: string, playerId: string): Promise<void> => {
+  const db = getDb();
+  const playerRef = doc(db, 'rooms', roomId, 'players', playerId);
+
+  await updateDoc(playerRef, {
+    isActive: false,
     lastSeenAt: serverTimestamp(),
   });
 };

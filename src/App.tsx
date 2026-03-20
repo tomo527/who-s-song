@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { subscribePlayers } from './firebase/player';
+import { deactivatePlayer, subscribePlayers } from './firebase/player';
 import { subscribeRound } from './firebase/game';
 import { firebaseConfigError } from './firebase/config';
 import { waitForAuthReady } from './firebase/auth';
@@ -139,6 +139,20 @@ function App() {
     setGameState(null);
   };
 
+  const handleBackToHomeFromLobby = async () => {
+    const currentState = gameState;
+
+    try {
+      if (currentState?.roomId && currentState.playerId) {
+        await deactivatePlayer(currentState.roomId, currentState.playerId);
+      }
+    } finally {
+      setIdentityError(null);
+      setAuthResolved(true);
+      setGameState(null);
+    }
+  };
+
   const authReady = !gameState || firebaseConfigError ? true : authResolved;
 
   if (!gameState) {
@@ -218,6 +232,7 @@ function App() {
         players={players}
         isHost={isActualHost}
         currentPlayerId={currentPlayerId}
+        onBackToHome={handleBackToHomeFromLobby}
       />
     );
   }
@@ -242,6 +257,8 @@ function App() {
         playerId={currentPlayerId}
         isHost={isActualHost}
         roomGenre={room.settings.genre || ''}
+        submitTimeLimit={room.settings.submitTimeLimit ?? null}
+        guessTimeLimit={room.settings.guessTimeLimit ?? null}
         round={currentRound}
         players={players}
       />

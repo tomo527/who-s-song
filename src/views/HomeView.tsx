@@ -7,6 +7,8 @@ import {
   DEFAULT_ROOM_SETTINGS,
   MAX_PLAYERS,
   MIN_PLAYERS,
+  TIME_LIMIT_OPTIONS,
+  formatTimeLimit,
 } from '../constants/game';
 import { loginAnonymously } from '../firebase/auth';
 import { getPlayerCount, upsertPlayer } from '../firebase/player';
@@ -67,6 +69,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [genre, setGenre] = useState('');
+  const [submitTimeLimit, setSubmitTimeLimit] = useState(DEFAULT_ROOM_SETTINGS.submitTimeLimit);
+  const [guessTimeLimit, setGuessTimeLimit] = useState(DEFAULT_ROOM_SETTINGS.guessTimeLimit);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -138,6 +142,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
       const room = await createRoom(playerId, {
         ...DEFAULT_ROOM_SETTINGS,
         genre: genre.trim(),
+        submitTimeLimit,
+        guessTimeLimit,
       });
 
       await upsertPlayer(room.id, playerId, playerName.trim(), true);
@@ -183,6 +189,18 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 tone="light"
                 value={genre}
                 onChange={(event) => setGenre(event.target.value)}
+              />
+              <TimeLimitSelector
+                label="プレイヤー提出時間"
+                helperText={`現在の設定: ${formatTimeLimit(submitTimeLimit)}`}
+                value={submitTimeLimit}
+                onChange={setSubmitTimeLimit}
+              />
+              <TimeLimitSelector
+                label="Game Master 推理時間"
+                helperText={`現在の設定: ${formatTimeLimit(guessTimeLimit)}`}
+                value={guessTimeLimit}
+                onChange={setGuessTimeLimit}
               />
               {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
               <Button size="xl" fullWidth isLoading={loading} onClick={handleCreate}>
@@ -364,3 +382,44 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
     </Layout>
   );
 };
+
+function TimeLimitSelector({
+  label,
+  helperText,
+  value,
+  onChange,
+}: {
+  label: string;
+  helperText: string;
+  value: (typeof TIME_LIMIT_OPTIONS)[number]['value'];
+  onChange: (value: (typeof TIME_LIMIT_OPTIONS)[number]['value']) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-semibold text-slate-900">{label}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">{helperText}</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {TIME_LIMIT_OPTIONS.map((option) => {
+          const selected = option.value === value;
+
+          return (
+            <button
+              key={option.label}
+              type="button"
+              onClick={() => onChange(option.value)}
+              className={`rounded-2xl border-2 px-3 py-3 text-sm font-semibold transition ${
+                selected
+                  ? 'border-primary-500 bg-primary-50 text-primary-600'
+                  : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
-import { MAX_PLAYERS, MIN_PLAYERS, MINIMUM_GAME_TURNS } from '../constants/game';
+import { MAX_PLAYERS, MIN_PLAYERS, MINIMUM_GAME_TURNS, formatTimeLimit } from '../constants/game';
 import { getDb } from '../firebase/config';
 import { createRound, getCurrentGameId } from '../firebase/game';
 import { getGameEndTurn } from '../logic/gameProgress';
@@ -16,6 +16,7 @@ interface LobbyViewProps {
   players: Player[];
   isHost: boolean;
   currentPlayerId: string;
+  onBackToHome: () => Promise<void>;
 }
 
 export const LobbyView: React.FC<LobbyViewProps> = ({
@@ -23,6 +24,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   players,
   isHost,
   currentPlayerId,
+  onBackToHome,
 }) => {
   const [draftGenre, setDraftGenre] = useState(room.settings.genre || '');
   const [isStarting, setIsStarting] = useState(false);
@@ -124,6 +126,23 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               最低 {MINIMUM_GAME_TURNS} ターン遊び、親の回数が全員そろう最初のタイミングで終了します。
               現在の人数だと目安は {gameEndTurn} ターンです。
             </p>
+          </div>
+        </Card>
+
+        <Card className={flatCardClass}>
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Room Settings</p>
+            <h3 className="text-xl font-semibold text-slate-900">時間制限の設定</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Submit</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">{formatTimeLimit(room.settings.submitTimeLimit)}</p>
+              </div>
+              <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Game Master Guess</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">{formatTimeLimit(room.settings.guessTimeLimit)}</p>
+              </div>
+            </div>
           </div>
         </Card>
 
@@ -236,6 +255,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             ))}
           </div>
         </Card>
+
+        <div className="pt-2">
+          <Button variant="outline" fullWidth onClick={() => void onBackToHome()}>
+            TOPページに戻る
+          </Button>
+        </div>
       </div>
     </Layout>
   );
