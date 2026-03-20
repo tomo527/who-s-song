@@ -157,7 +157,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
     return (
       <Layout showBack onBack={() => setView('home')} title="ルームを作る">
         <div className="space-y-5">
-          <Card className="border-primary-200 bg-white">
+          <Card className="border-primary-200 bg-white shadow-none hover:border-primary-200 hover:bg-white">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-500">Host Setup</p>
             <h3 className="mt-2 text-2xl font-semibold text-slate-900">ジャンルを決めてルームを作成</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -165,7 +165,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             </p>
           </Card>
 
-          <Card className="border-slate-200 bg-white">
+          <Card className="border-slate-200 bg-white shadow-none hover:border-slate-200 hover:bg-white">
             <div className="space-y-4">
               <Input
                 label="表示名"
@@ -198,7 +198,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
     return (
       <Layout showBack onBack={() => setView('home')} title="ルームに参加する">
         <div className="space-y-5">
-          <Card className="border-accent-200 bg-white">
+          <Card className="border-accent-200 bg-white shadow-none hover:border-accent-200 hover:bg-white">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Quick Join</p>
             <h3 className="mt-2 text-2xl font-semibold text-slate-900">コードを入れてすぐ参加</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -206,7 +206,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             </p>
           </Card>
 
-          <Card className="border-slate-200 bg-white">
+          <Card className="border-slate-200 bg-white shadow-none hover:border-slate-200 hover:bg-white">
             <div className="space-y-4">
               <Input
                 label="ルームコード"
@@ -238,7 +238,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
   return (
     <Layout>
       <div className="-mx-4 -mt-5 min-h-[calc(100vh-9rem)] space-y-6 bg-[#f7f8fc] px-4 py-5 pb-10 text-slate-900">
-        <section className="rounded-[2.25rem] border border-slate-200 bg-white px-5 py-6 shadow-[0_22px_48px_-32px_rgba(98,146,233,0.28)]">
+        <section className="rounded-[2.25rem] border border-slate-200 bg-white px-5 py-6">
           <div className="space-y-5">
             <div className="space-y-3">
               <p className="text-sm font-semibold tracking-[0.08em] text-slate-500">
@@ -267,7 +267,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 <p className="text-lg font-bold text-slate-900">{MIN_PLAYERS}-{MAX_PLAYERS}</p>
                 <p className="text-[11px] text-slate-500">players</p>
               </div>
-              <div className="rounded-2xl border border-accent-200 bg-accent-100 px-3 py-3">
+              <div className="rounded-2xl border border-accent-500 bg-accent-100 px-3 py-3 transition-colors hover:border-accent-500 active:border-accent-500">
                 <p className="text-lg font-bold text-slate-900">10-20</p>
                 <p className="text-[11px] text-slate-500">minutes</p>
               </div>
@@ -276,7 +276,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
         </section>
 
         {startupError && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-red-200 bg-red-50 shadow-none hover:border-red-200 hover:bg-red-50">
             <div className="space-y-3">
               <div className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-600">
                 Setup Required
@@ -301,7 +301,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
           </div>
           <div className="grid gap-3">
             {flowSteps.map((step) => (
-              <Card key={step.label} className="border-slate-200 bg-white shadow-[0_18px_40px_-32px_rgba(98,146,233,0.24)] hover:border-slate-200 hover:bg-white">
+              <Card key={step.label} className="border-slate-200 bg-white shadow-none hover:border-slate-200 hover:bg-white">
                 <div className="flex items-start gap-4">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-500 text-sm font-bold text-white">
                     {step.label}
@@ -323,7 +323,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
           </div>
           <div className="grid gap-3">
             {valueCards.map((card) => (
-              <Card key={card.title} className="border-slate-200 bg-white shadow-[0_18px_40px_-32px_rgba(251,84,88,0.18)] hover:border-slate-200 hover:bg-white">
+              <Card key={card.title} className="border-slate-200 bg-white shadow-none hover:border-slate-200 hover:bg-white">
                 <h4 className="text-base font-semibold text-slate-900">{card.title}</h4>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{card.body}</p>
               </Card>
@@ -336,7 +336,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Scoring</p>
             <h3 className="mt-1 text-xl font-semibold text-slate-900">得点ルール</h3>
           </div>
-          <Card className="border-accent-200 bg-white shadow-[0_18px_40px_-32px_rgba(98,146,233,0.24)] hover:border-accent-200 hover:bg-white">
+          <Card className="border-accent-200 bg-white shadow-none hover:border-accent-200 hover:bg-white">
             <ul className="space-y-3 text-sm leading-6 text-slate-700">
               {scoreIdeas.map((idea) => (
                 <li key={idea} className="flex gap-3">
