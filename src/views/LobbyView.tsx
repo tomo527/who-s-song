@@ -25,6 +25,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   currentPlayerId,
 }) => {
   const [draftGenre, setDraftGenre] = useState(room.settings.genre || '');
+  const [isStarting, setIsStarting] = useState(false);
 
   const currentParent = useMemo(() => getRotatingParent(players, 1), [players]);
   const isCurrentParent = currentParent?.id === currentPlayerId;
@@ -44,22 +45,35 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   };
 
   const handleStart = async () => {
-    if (!isCurrentParent || players.length < MIN_PLAYERS || !currentParent || !room.settings.genre.trim()) {
+    if (
+      isStarting ||
+      room.status !== 'waiting' ||
+      Boolean(room.currentRoundId) ||
+      !isCurrentParent ||
+      players.length < MIN_PLAYERS ||
+      !currentParent ||
+      !room.settings.genre.trim()
+    ) {
       return;
     }
 
-    await createRound(
-      room.id,
-      '',
-      1,
-      currentParent.id,
-      getCurrentGameId(room),
-    );
+    setIsStarting(true);
+    try {
+      await createRound(
+        room.id,
+        '',
+        1,
+        currentParent.id,
+        getCurrentGameId(room),
+      );
 
-    const db = getDb();
-    await updateDoc(doc(db, 'rooms', room.id), {
-      status: 'active',
-    });
+      const db = getDb();
+      await updateDoc(doc(db, 'rooms', room.id), {
+        status: 'active',
+      });
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   return (
@@ -154,7 +168,8 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               <Button
                 size="xl"
                 fullWidth
-                disabled={!canStart}
+                isLoading={isStarting}
+                disabled={!canStart || isStarting || room.status !== 'waiting' || Boolean(room.currentRoundId)}
                 onClick={handleStart}
               >
                 {players.length < MIN_PLAYERS

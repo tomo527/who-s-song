@@ -56,7 +56,35 @@ export const updateRoundPhase = async (
   phase: RoundPhase,
 ): Promise<void> => {
   const db = getDb();
-  await updateDoc(doc(db, 'rooms', roomId, 'rounds', roundId), { phase });
+  const roundRef = doc(db, 'rooms', roomId, 'rounds', roundId);
+
+  if (phase === 'guessing') {
+    const roundSnapshot = await getDoc(roundRef);
+    if (!roundSnapshot.exists()) {
+      throw new Error('Round not found');
+    }
+
+    const round = { id: roundSnapshot.id, ...roundSnapshot.data() } as Round;
+    if (round.phase !== 'submitting') {
+      throw new Error('Round is not in submitting phase');
+    }
+
+    if (!round.theme.trim()) {
+      throw new Error('Theme must be set before guessing starts');
+    }
+
+    const [playersSnapshot, submissionsSnapshot] = await Promise.all([
+      getDocs(collection(db, 'rooms', roomId, 'players')),
+      getDocs(query(collection(db, 'rooms', roomId, 'submissions'), where('roundId', '==', roundId))),
+    ]);
+    const requiredSubmissions = Math.max(playersSnapshot.size - 1, 0);
+
+    if (submissionsSnapshot.size !== requiredSubmissions) {
+      throw new Error('All non-parent submissions are required before guessing starts');
+    }
+  }
+
+  await updateDoc(roundRef, { phase });
 };
 
 export const updateRoundBonus = async (
