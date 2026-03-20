@@ -6,12 +6,12 @@ import { MINIMUM_GAME_TURNS } from '../constants/game';
 import {
   advanceGame,
   finalizeRoundScores,
+  subscribePlayerGuess,
   subscribeSubmissions,
-  updateRoundBonus,
 } from '../firebase/game';
 import { getGameEndTurn, shouldFinishGameAfterRound } from '../logic/gameProgress';
 import { getRotatingParent } from '../logic/parentRotation';
-import type { Player, Round, Room, Submission } from '../types';
+import type { Guess, Player, Round, Room, Submission } from '../types';
 
 interface ResultViewProps {
   room: Room;
@@ -33,12 +33,29 @@ export const ResultView: React.FC<ResultViewProps> = ({
   currentPlayerId,
 }) => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [guess, setGuess] = useState<Guess | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const unsubscribeSubmissions = subscribeSubmissions(room.id, roundId, setSubmissions);
     return () => unsubscribeSubmissions();
   }, [room.id, roundId]);
+
+  useEffect(() => {
+    if (!round?.parentPlayerId) {
+      setGuess(null);
+      return;
+    }
+
+    const unsubscribeGuess = subscribePlayerGuess(
+      room.id,
+      roundId,
+      round.parentPlayerId,
+      setGuess,
+    );
+
+    return () => unsubscribeGuess();
+  }, [room.id, round?.parentPlayerId, roundId]);
 
   const currentParent = useMemo(
     () => players.find((player) => player.id === round?.parentPlayerId) ?? null,
@@ -132,26 +149,34 @@ export const ResultView: React.FC<ResultViewProps> = ({
         <div className="space-y-4">
           {submissions.map((submission) => {
             const author = players.find((player) => player.id === submission.playerId);
-            const isBonusWinner = submission.id === round.bonusWinnerSubmissionId;
+            const guessAnswer = guess?.answers.find((answer) => answer.submissionId === submission.id);
+            const guessedPlayer = players.find((player) => player.id === guessAnswer?.guessedPlayerId);
+            const hasAnswer = Boolean(guessAnswer);
+            const isCorrect = hasAnswer && guessAnswer?.guessedPlayerId === submission.playerId;
 
             return (
               <Card
                 key={submission.id}
                 className={`relative border-2 shadow-none ${
-                  isBonusWinner
-                    ? 'border-yellow-400 bg-yellow-50 hover:border-yellow-400 hover:bg-yellow-50'
-                    : 'border-slate-400 bg-slate-50 hover:border-slate-400 hover:bg-slate-50'
+                  !hasAnswer
+                    ? 'border-slate-400 bg-slate-50 hover:border-slate-400 hover:bg-slate-50'
+                    : isCorrect
+                    ? 'border-emerald-400 bg-emerald-50 hover:border-emerald-400 hover:bg-emerald-50'
+                    : 'border-red-300 bg-red-50 hover:border-red-300 hover:bg-red-50'
                 }`}
               >
-                <div className="absolute right-4 top-4 flex items-center gap-2">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-primary-300 bg-white text-xs font-semibold text-primary-600">
-                    正解
+                <div className="absolute right-4 top-4">
+                  <span
+                    className={`inline-flex items-center rounded-xl border px-3 py-1 text-[11px] font-semibold ${
+                      !hasAnswer
+                        ? 'border-slate-300 bg-white text-slate-600'
+                        : isCorrect
+                        ? 'border-emerald-400 bg-emerald-100 text-emerald-700'
+                        : 'border-red-300 bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {!hasAnswer ? '確認中' : isCorrect ? '正解' : '不正解'}
                   </span>
-                  {isBonusWinner && (
-                    <span className="inline-flex items-center gap-1 rounded-xl border border-yellow-400 bg-yellow-200 px-2 py-1 text-[10px] font-semibold text-slate-900">
-                      BEST
-                    </span>
-                  )}
                 </div>
 
                 <div className="space-y-3">
@@ -160,27 +185,25 @@ export const ResultView: React.FC<ResultViewProps> = ({
                     <h4 className="text-2xl font-semibold leading-tight text-slate-950">{submission.songName}</h4>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-slate-300 pt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white text-[11px] font-semibold text-slate-700">
-                        {author?.name?.charAt(0) ?? '?'}
+                  <div className="grid gap-3 border-t border-slate-300 pt-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Actual Player</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-2xl border-2 border-slate-300 bg-slate-100 text-[11px] font-semibold text-slate-700">
+                          {author?.name?.charAt(0) ?? '?'}
+                        </div>
+                        <span className="text-sm font-semibold text-slate-900">{author?.name ?? '不明'}</span>
                       </div>
-                      <span className="text-sm font-semibold text-slate-900">{author?.name ?? '不明'} さん</span>
                     </div>
-
-                    {isCurrentParent && !round.scoreFinalized && (
-                      <button
-                        type="button"
-                        onClick={() => void updateRoundBonus(room.id, round.id, submission.id)}
-                        className={`rounded-xl border px-3 py-2 text-[11px] font-semibold transition ${
-                          isBonusWinner
-                            ? 'border-yellow-400 bg-yellow-300 text-slate-900'
-                            : 'border-slate-300 bg-white text-slate-700 hover:border-yellow-400 hover:bg-yellow-50'
-                        }`}
-                      >
-                        {isBonusWinner ? 'BEST選択中' : 'BESTにする'}
-                      </button>
-                    )}
+                    <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Game Master Answer</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-2xl border-2 border-slate-300 bg-slate-100 text-[11px] font-semibold text-slate-700">
+                          {guessedPlayer?.name?.charAt(0) ?? '?'}
+                        </div>
+                        <span className="text-sm font-semibold text-slate-900">{guessedPlayer?.name ?? '未回答'}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {submission.comment && (
@@ -188,6 +211,18 @@ export const ResultView: React.FC<ResultViewProps> = ({
                       "{submission.comment}"
                     </p>
                   )}
+
+                  <p
+                    className={`text-sm font-medium ${
+                      !hasAnswer ? 'text-slate-600' : isCorrect ? 'text-emerald-700' : 'text-red-700'
+                    }`}
+                  >
+                    {!hasAnswer
+                      ? 'Game Master の回答を読み込んでいます。'
+                      : isCorrect
+                      ? `${currentParent?.name || 'Game Master'} の回答は正解でした。`
+                      : `${currentParent?.name || 'Game Master'} は ${guessedPlayer?.name || '未回答'} と答えました。`}
+                  </p>
                 </div>
               </Card>
             );
@@ -215,7 +250,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
                   <h4 className="mt-2 text-xl font-semibold text-slate-900">このターンの結果を確定する</h4>
                 </div>
                 <p className="text-sm leading-6 text-slate-600">
-                  BEST とスコアを確定すると、次のターンへ進めます。
+                  このターンのスコアを確定すると、次のターンへ進めます。
                 </p>
               </div>
             </Card>

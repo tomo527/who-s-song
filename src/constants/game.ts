@@ -7,7 +7,6 @@ export const MINIMUM_GAME_TURNS = 10;
 export const DEFAULT_SCORING: RoomSettings['scoring'] = {
   correctGuess: 2,
   noOneGuessedMine: 2,
-  bestSubmissionBonus: 1,
 };
 
 export const DEFAULT_ROOM_SETTINGS: RoomSettings = {

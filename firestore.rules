@@ -84,6 +84,10 @@ service cloud.firestore {
             resource != null &&
             (
               resource.data.playerId == request.auth.uid ||
+              (
+                isRoomMember(roomId) &&
+                get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.phase == 'revealing'
+              ) ||
               get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.scoreFinalized == true
             )
           )

@@ -121,7 +121,7 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
             1ゲームぶんのスコアと理解度をまとめています。
           </p>
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            スコアは親の正解と、自分らしさが伝わった曲、BEST ボーナスをもとに集計しています。
+            スコアは Game Master の正解と、プレイヤー側で当ててもらえた曲をもとに集計しています。
           </p>
         </div>
 

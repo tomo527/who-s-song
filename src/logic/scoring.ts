@@ -5,7 +5,6 @@ export const calculateScores = (
   submissions: Submission[],
   guesses: Guess[],
   scoring: RoomSettings['scoring'],
-  bonusWinnerSubmissionId?: string,
 ): Record<string, number> => {
   const scoreMap: Record<string, number> = {};
 
@@ -35,14 +34,6 @@ export const calculateScores = (
 
     if (guessedByParent) {
       scoreMap[ownerId] = (scoreMap[ownerId] || 0) + scoring.noOneGuessedMine;
-    }
-  }
-
-  if (bonusWinnerSubmissionId) {
-    const winnerSubmission = submissions.find((submission) => submission.id === bonusWinnerSubmissionId);
-    if (winnerSubmission) {
-      scoreMap[winnerSubmission.playerId] =
-        (scoreMap[winnerSubmission.playerId] || 0) + scoring.bestSubmissionBonus;
     }
   }
 

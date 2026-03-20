@@ -87,17 +87,6 @@ export const updateRoundPhase = async (
   await updateDoc(roundRef, { phase });
 };
 
-export const updateRoundBonus = async (
-  roomId: string,
-  roundId: string,
-  submissionId: string,
-): Promise<void> => {
-  const db = getDb();
-  await updateDoc(doc(db, 'rooms', roomId, 'rounds', roundId), {
-    bonusWinnerSubmissionId: submissionId,
-  });
-};
-
 export const updateRoundTheme = async (
   roomId: string,
   roundId: string,
@@ -286,7 +275,6 @@ export const finalizeRoundScores = async (
     submissions,
     guesses,
     room.settings.scoring,
-    round.bonusWinnerSubmissionId,
   );
 
   const batch = writeBatch(db);
