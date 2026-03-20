@@ -5,7 +5,6 @@ import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
 import { MAX_PLAYERS, MIN_PLAYERS, MINIMUM_GAME_TURNS } from '../constants/game';
-import { getRandomPrompt } from '../constants/prompts';
 import { getDb } from '../firebase/config';
 import { createRound, getCurrentGameId } from '../firebase/game';
 import { getGameEndTurn } from '../logic/gameProgress';
@@ -25,13 +24,15 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   isHost,
   currentPlayerId,
 }) => {
-  const [draftPrompt, setDraftPrompt] = useState(() => getRandomPrompt());
   const [draftGenre, setDraftGenre] = useState(room.settings.genre || '');
 
   const currentParent = useMemo(() => getRotatingParent(players, 1), [players]);
   const isCurrentParent = currentParent?.id === currentPlayerId;
-  const participantsLabel = `${players.length} / ${MAX_PLAYERS}人`;
+  const participantsLabel = `${players.length} / ${MAX_PLAYERS}`;
   const gameEndTurn = getGameEndTurn(players.length, room.settings.roundsCount || MINIMUM_GAME_TURNS);
+  const canStart = players.length >= MIN_PLAYERS && Boolean(room.settings.genre.trim()) && Boolean(currentParent);
+
+  const flatCardClass = 'border-slate-400/70 bg-white shadow-none hover:border-slate-400/70 hover:bg-white';
 
   const updateRoomSettings = async (values: Partial<Room['settings']>) => {
     const db = getDb();
@@ -43,14 +44,13 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   };
 
   const handleStart = async () => {
-    if (!isCurrentParent || players.length < MIN_PLAYERS || !currentParent) {
+    if (!isCurrentParent || players.length < MIN_PLAYERS || !currentParent || !room.settings.genre.trim()) {
       return;
     }
 
-    const theme = draftPrompt.trim() || getRandomPrompt();
     await createRound(
       room.id,
-      theme,
+      '',
       1,
       currentParent.id,
       getCurrentGameId(room),
@@ -60,126 +60,134 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
     await updateDoc(doc(db, 'rooms', room.id), {
       status: 'active',
     });
-
   };
 
   return (
     <Layout title="ロビー">
-      <div className="space-y-5 pb-10">
-        <Card className="overflow-hidden bg-linear-to-br from-primary-500/22 via-white/8 to-accent-500/18">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-200">Room Ready</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div>
-              <p className="text-xs font-medium text-slate-300">ルームコード</p>
-              <div className="mt-1 text-5xl font-black tracking-[0.18em] text-white">{room.roomCode}</div>
-              <p className="mt-3 text-sm text-slate-200">
-                ジャンル: <span className="font-semibold text-white">{room.settings.genre || '未設定'}</span>
+      <div className="space-y-5 pb-10 text-slate-900">
+        <Card className={flatCardClass}>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Room Ready</p>
+              <h2 className="text-2xl font-semibold text-slate-900">メンバーがそろったら開始できます</h2>
+              <p className="text-sm leading-6 text-slate-600">
+                ルーム開始後、そのターンの親がお題を決めてから提出フェーズに入ります。
               </p>
             </div>
-            <div className="rounded-2xl border border-white/12 bg-black/16 px-3 py-2 text-right">
-              <p className="text-[11px] text-slate-400">参加人数</p>
-              <p className="text-lg font-semibold text-white">{participantsLabel}</p>
+
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-stretch">
+              <div className="rounded-[1.5rem] border border-slate-300 bg-slate-50 px-4 py-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Room Code</p>
+                <p className="mt-2 text-4xl font-black tracking-[0.18em] text-slate-950">{room.roomCode}</p>
+                <p className="mt-3 text-sm text-slate-600">
+                  ジャンル: <span className="font-semibold text-slate-900">{room.settings.genre || '未設定'}</span>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:w-[12rem] sm:grid-cols-1">
+                <div className="rounded-[1.5rem] border border-primary-300 bg-primary-50 px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-500">Players</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">{participantsLabel}</p>
+                </div>
+                <div className="rounded-[1.5rem] border border-accent-300 bg-accent-100 px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-500">Finish</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">Turn {gameEndTurn}</p>
+                </div>
+              </div>
             </div>
           </div>
         </Card>
 
-        <Card className="bg-linear-to-br from-white/10 to-accent-500/10">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300">Game Rules</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">
-            {currentParent ? `${currentParent.name} が1ターン目の親役です` : '親役を準備中'}
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-slate-300">
-            親役は曲を提出せず、提出された匿名曲の提出者を推理します。
-            最低 {MINIMUM_GAME_TURNS} ターン進み、親役回数が全員で再び揃った最初のタイミングでゲーム終了です。
-          </p>
-          <p className="mt-3 text-xs leading-5 text-slate-400">
-            現在の人数なら終了目安は {gameEndTurn} ターンです。
-          </p>
+        <Card className={flatCardClass}>
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Round Flow</p>
+            <h3 className="text-xl font-semibold text-slate-900">
+              1ターン目の親は {currentParent?.name || '未定'} です
+            </h3>
+            <p className="text-sm leading-6 text-slate-600">
+              最低 {MINIMUM_GAME_TURNS} ターン遊び、親の回数が全員そろう最初のタイミングで終了します。
+              現在の人数だと目安は {gameEndTurn} ターンです。
+            </p>
+          </div>
         </Card>
 
         {isHost && (
-          <Card>
+          <Card className="border-primary-300 bg-white shadow-none hover:border-primary-300 hover:bg-white">
             <div className="space-y-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Host Controls</p>
-                <h3 className="mt-1 text-xl font-semibold text-white">ジャンルを確認する</h3>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-500">Host Controls</p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900">ジャンルを確認する</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  ルーム全体で共有するのはジャンルだけです。お題は各ターンの親があとで決めます。
+                </p>
               </div>
               <Input
-                label="共通ジャンル"
+                tone="light"
+                label="今回のジャンル"
                 placeholder="例: 邦ロック / ボカロ / アニソン"
-                helperText="同じメンバーでも、次のゲーム前にここで変更できます"
+                helperText="ゲーム開始後もこのジャンルはルーム全体で維持されます"
                 value={draftGenre}
                 onChange={(event) => setDraftGenre(event.target.value)}
               />
               <Button
                 variant="secondary"
                 fullWidth
+                disabled={!draftGenre.trim()}
                 onClick={() => void updateRoomSettings({ genre: draftGenre })}
               >
-                ジャンルを保存
+                ジャンルを保存する
               </Button>
             </div>
           </Card>
         )}
 
         {isCurrentParent ? (
-          <Card>
+          <Card className="border-accent-300 bg-white shadow-none hover:border-accent-300 hover:bg-white">
             <div className="space-y-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary-100">Parent Controls</p>
-                <h3 className="mt-1 text-xl font-semibold text-white">ジャンル内で今回のお題を決める</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  ジャンルは <span className="font-semibold text-white">{room.settings.genre || '未設定'}</span> です。
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Parent Controls</p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900">ゲームを開始する</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  開始後、このターンの親であるあなたが最初のお題を決めます。非親はお題確定後に曲を提出します。
                 </p>
               </div>
               <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                onClick={() => setDraftPrompt((current) => getRandomPrompt(current))}
-              >
-                ランダムなお題を表示
-              </Button>
-              <Input
-                label="今回のお題"
-                placeholder="例: ドライブで流したい曲"
-                value={draftPrompt}
-                onChange={(event) => setDraftPrompt(event.target.value)}
-                helperText="ランダム候補を出したあとに手修正できます"
-              />
-              <Button
                 size="xl"
                 fullWidth
-                disabled={players.length < MIN_PLAYERS || !draftPrompt.trim() || !room.settings.genre.trim()}
+                disabled={!canStart}
                 onClick={handleStart}
               >
                 {players.length < MIN_PLAYERS
-                  ? `${MIN_PLAYERS}人以上集まると開始できます`
+                  ? `${MIN_PLAYERS}人そろうと開始できます`
                   : !room.settings.genre.trim()
-                    ? 'ジャンルを決めると開始できます'
-                    : 'このお題で開始'}
+                    ? 'ジャンルを設定すると開始できます'
+                    : 'ゲームを開始する'}
               </Button>
             </div>
           </Card>
         ) : (
-          <Card className="bg-white/7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Waiting</p>
-            <h3 className="mt-2 text-lg font-semibold text-white">親役がお題を準備しています</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {currentParent ? `${currentParent.name} が準備できたらゲームが始まります。` : 'プレイヤー情報を同期中です。'}
-            </p>
+          <Card className={flatCardClass}>
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Waiting</p>
+              <h3 className="text-xl font-semibold text-slate-900">親の開始を待っています</h3>
+              <p className="text-sm leading-6 text-slate-600">
+                {currentParent
+                  ? `${currentParent.name} さんがゲームを開始し、そのまま1ターン目のお題を決めます。`
+                  : 'プレイヤー情報を読み込み中です。'}
+              </p>
+            </div>
           </Card>
         )}
 
-        <Card>
-          <div className="flex items-center justify-between">
+        <Card className={flatCardClass}>
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Players</p>
-              <h3 className="mt-1 text-lg font-semibold text-white">参加メンバー</h3>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Players</p>
+              <h3 className="mt-1 text-xl font-semibold text-slate-900">参加メンバー</h3>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/18 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-              <span className="h-2 w-2 rounded-full bg-emerald-300" />
-              接続中
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              募集中
             </div>
           </div>
 
@@ -188,22 +196,22 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               <div
                 key={player.id}
                 className={`flex items-center justify-between rounded-[1.35rem] border px-4 py-3 ${
-                  player.isHost ? 'border-primary-300/24 bg-primary-400/12' : 'border-white/10 bg-white/6'
+                  player.isHost ? 'border-primary-300 bg-primary-50' : 'border-slate-300 bg-slate-50'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold ${
-                      player.isHost ? 'bg-linear-to-br from-primary-500 to-accent-500 text-white' : 'bg-white/10 text-slate-100'
+                      player.isHost ? 'bg-primary-500 text-white' : 'bg-slate-200 text-slate-700'
                     }`}
                   >
                     {player.name.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold text-white">{player.name}</p>
+                    <p className="font-semibold text-slate-900">{player.name}</p>
                     <div className="flex flex-wrap gap-2 text-[11px] font-medium">
-                      {player.isHost && <span className="text-primary-100">Host</span>}
-                      {currentParent?.id === player.id && <span className="text-accent-200">親役</span>}
+                      {player.isHost && <span className="text-primary-600">Host</span>}
+                      {currentParent?.id === player.id && <span className="text-accent-600">親</span>}
                     </div>
                   </div>
                 </div>

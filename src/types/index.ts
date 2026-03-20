@@ -4,7 +4,6 @@ export type RoundPhase = 'submitting' | 'guessing' | 'revealing';
 export interface RoomSettings {
   roundsCount: number;
   genre: string;
-  theme?: string;
   scoring: {
     correctGuess: number;
     noOneGuessedMine: number;

@@ -3,12 +3,14 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
+import { getRandomPrompt } from '../constants/prompts';
 import {
   subscribePlayerGuess,
   subscribeSubmissions,
   submitGuess,
   submitSong,
   updateRoundPhase,
+  updateRoundTheme,
 } from '../firebase/game';
 import { getSubmittingPlayers } from '../logic/parentRotation';
 import type { GuessAnswer, Player, Round, Submission } from '../types';
@@ -25,12 +27,17 @@ interface GameViewProps {
 
 export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, roomGenre, round, players }) => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [draftTheme, setDraftTheme] = useState(() => getRandomPrompt());
   const [songName, setSongName] = useState('');
   const [comment, setComment] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isGuessSubmitted, setIsGuessSubmitted] = useState(false);
   const [guesses, setGuesses] = useState<GuessAnswer[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setDraftTheme(round?.theme?.trim() ? round.theme : getRandomPrompt());
+  }, [roundId, round?.theme]);
 
   useEffect(() => {
     setSongName('');
@@ -75,6 +82,7 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
   );
   const guessCandidates = submittingPlayers;
   const allRequiredSubmissionsIn = submissions.length === submittingPlayers.length;
+  const isThemeReady = Boolean(round?.theme?.trim());
   const parentPlayer = players.find((player) => player.id === round?.parentPlayerId);
 
   const handleSubmitSong = async () => {
@@ -86,6 +94,19 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
     try {
       await submitSong(roomId, roundId, playerId, songName.trim(), comment.trim());
       setIsSubmitted(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmTheme = async () => {
+    if (!isParent || round?.phase !== 'submitting' || !draftTheme.trim()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await updateRoundTheme(roomId, roundId, playerId, draftTheme.trim());
     } finally {
       setLoading(false);
     }
@@ -125,6 +146,78 @@ export const GameView: React.FC<GameViewProps> = ({ roomId, roundId, playerId, r
   }
 
   if (round.phase === 'submitting') {
+    if (!isThemeReady) {
+      const flatCardClass = 'border-slate-400/70 bg-white shadow-none hover:border-slate-400/70 hover:bg-white';
+
+      return (
+        <Layout title="お題を決める">
+          <div className="space-y-5 pb-10 text-slate-900">
+            <Card className={flatCardClass}>
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Theme Setup</p>
+                <h3 className="text-2xl font-semibold text-slate-900">このターンのお題を決めます</h3>
+                <p className="text-sm leading-6 text-slate-600">
+                  ジャンルは <span className="font-semibold text-slate-900">{roomGenre || '未設定'}</span> です。
+                  親がお題を確定したあと、非親プレイヤーの提出フェーズが始まります。
+                </p>
+              </div>
+            </Card>
+
+            {isParent ? (
+              <Card className="border-accent-300 bg-white shadow-none hover:border-accent-300 hover:bg-white">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Parent Controls</p>
+                    <h4 className="mt-2 text-xl font-semibold text-slate-900">{parentPlayer?.name || '親'} がこのターンのお題を決めます</h4>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      ランダム候補を見ながら自由入力でも決められます。確定後にそのまま提出画面へ進みます。
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    fullWidth
+                    onClick={() => setDraftTheme((current) => getRandomPrompt(current))}
+                  >
+                    ランダムなお題を表示
+                  </Button>
+                  <Input
+                    tone="light"
+                    label="このターンのお題"
+                    placeholder="例: ドライブで聴きたい曲"
+                    value={draftTheme}
+                    onChange={(event) => setDraftTheme(event.target.value)}
+                    helperText="確定したお題だけがこのターンの参加者全員に表示されます"
+                  />
+                  <Button
+                    size="xl"
+                    fullWidth
+                    isLoading={loading}
+                    disabled={!draftTheme.trim()}
+                    onClick={handleConfirmTheme}
+                  >
+                    お題を確定して提出を始める
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <Card className={flatCardClass}>
+                <div className="space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Waiting</p>
+                  <h4 className="text-xl font-semibold text-slate-900">親がお題を決めるまで待機中です</h4>
+                  <p className="text-sm leading-6 text-slate-600">
+                    {parentPlayer
+                      ? `${parentPlayer.name} さんがお題を確定すると、あなたの曲提出フォームが表示されます。`
+                      : '親プレイヤー情報を読み込み中です。'}
+                  </p>
+                </div>
+              </Card>
+            )}
+          </div>
+        </Layout>
+      );
+    }
+
     return (
       <Layout title="曲を提出">
         <div className="space-y-8">

@@ -70,6 +70,39 @@ export const updateRoundBonus = async (
   });
 };
 
+export const updateRoundTheme = async (
+  roomId: string,
+  roundId: string,
+  playerId: string,
+  theme: string,
+): Promise<void> => {
+  const trimmedTheme = theme.trim();
+  if (!trimmedTheme) {
+    throw new Error('Theme is required');
+  }
+
+  const db = getDb();
+  const roundRef = doc(db, 'rooms', roomId, 'rounds', roundId);
+  const roundSnapshot = await getDoc(roundRef);
+
+  if (!roundSnapshot.exists()) {
+    throw new Error('Round not found');
+  }
+
+  const round = { id: roundSnapshot.id, ...roundSnapshot.data() } as Round;
+  if (round.parentPlayerId !== playerId) {
+    throw new Error('Only the parent can set the round theme');
+  }
+
+  if (round.phase !== 'submitting') {
+    throw new Error('Theme can only be updated during the submitting phase');
+  }
+
+  await updateDoc(roundRef, {
+    theme: trimmedTheme,
+  });
+};
+
 export const submitSong = async (
   roomId: string,
   roundId: string,
