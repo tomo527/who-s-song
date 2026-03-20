@@ -27,8 +27,8 @@
   font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #e5eefc;
-  background: #10213b;
+  color: #1f2937;
+  background: #f7f8fc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -55,8 +55,8 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.03);
-  opacity: 0.4;
+  background: rgba(255, 255, 255, 0);
+  opacity: 1;
 }
 
 button,
