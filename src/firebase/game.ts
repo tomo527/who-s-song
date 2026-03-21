@@ -20,6 +20,13 @@ import { getDb } from './config';
 
 export const getCurrentGameId = (room: Pick<Room, 'currentGameId'>): number => room.currentGameId || 1;
 
+const getActivePlayerCount = (
+  playerDocs: Array<{ data: () => Partial<Player> }>,
+): number => playerDocs.filter((playerDoc) => {
+  const player = playerDoc.data();
+  return player.isActive !== false;
+}).length;
+
 export const createRound = async (
   roomId: string,
   theme: string,
@@ -29,7 +36,7 @@ export const createRound = async (
 ): Promise<string> => {
   const db = getDb();
   const playersSnapshot = await getDocs(collection(db, 'rooms', roomId, 'players'));
-  if (playersSnapshot.size < MIN_PLAYERS) {
+  if (getActivePlayerCount(playersSnapshot.docs) < MIN_PLAYERS) {
     throw new Error(`${MIN_PLAYERS}人以上集まってから開始してください。`);
   }
 
@@ -78,7 +85,8 @@ export const updateRoundPhase = async (
       getDocs(collection(db, 'rooms', roomId, 'players')),
       getDocs(query(collection(db, 'rooms', roomId, 'submissions'), where('roundId', '==', roundId))),
     ]);
-    const requiredSubmissions = Math.max(playersSnapshot.size - 1, 0);
+    const activePlayerCount = getActivePlayerCount(playersSnapshot.docs);
+    const requiredSubmissions = Math.max(activePlayerCount - 1, 0);
 
     if (submissionsSnapshot.size !== requiredSubmissions) {
       throw new Error('All non-parent submissions are required before guessing starts');
