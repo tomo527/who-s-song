@@ -257,6 +257,30 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
             終了してTOPへ戻る
           </Button>
         </div>
+
+        <Card className="border-2 border-slate-600/40 bg-slate-50 shadow-none hover:border-slate-600/40 hover:bg-slate-50">
+          <div className="space-y-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Support</p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900">このゲームが楽しかったら</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                もし「面白かった」「また遊びたい」と思ってもらえたら、コーヒー代のご支援をいただけるとうれしいです。
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">開発継続の励みになります。</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                もちろん任意です。遊んでもらえるだけでも本当にうれしいです。
+              </p>
+            </div>
+            <a
+              href="https://buymeacoffee.com/tomo_036924768"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-primary-500 bg-white px-4 py-3 text-sm font-semibold text-primary-600 transition hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-200"
+            >
+              Buy me a coffee
+            </a>
+          </div>
+        </Card>
       </div>
     </Layout>
   );

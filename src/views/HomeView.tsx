@@ -36,6 +36,21 @@ const valueCards = [
   },
 ];
 
+const gettingStartedSteps = [
+  {
+    label: '1',
+    body: 'だれか1人がホストになって「ルームを作る」',
+  },
+  {
+    label: '2',
+    body: '表示されたルームコードを参加者に共有する',
+  },
+  {
+    label: '3',
+    body: 'ほかの人は「ルームに参加する」からコードを入力して入室する',
+  },
+];
+
 const flowSteps = [
   {
     label: '1',
@@ -59,9 +74,12 @@ const flowSteps = [
   },
 ];
 
-const scoreIdeas = [
-  '親として誰の曲かを正しく見抜けるほど高得点',
-  '自分の選曲が親に「あなたらしい」と伝わっても加点',
+const ruleItems = [
+  '毎ターン1人が Game Master になり、お題を決めます。ほかの全員は、そのお題に合う曲を匿名で提出します。',
+  'Game Master は、誰がどの曲を出したかを当てます。',
+  '得点は、Game Master として当てること、そして自分らしい選曲で当ててもらうことの両方で入ります。',
+  '同じ曲名を複数人が提出した場合は、そのグループ内の誰を選んでも正解として扱います。',
+  '制限時間は進行の目安で、時間切れになっても自動では進みません。',
 ];
 
 export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) => {
@@ -284,6 +302,28 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
               </Button>
             </div>
 
+            <div className="space-y-3 rounded-[1.75rem] border-2 border-slate-600/40 bg-slate-50 p-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Getting Started</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-900">始め方</h3>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {gettingStartedSteps.map((step) => (
+                  <div
+                    key={step.label}
+                    className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border-2 border-primary-300 bg-primary-50 text-sm font-bold text-primary-600">
+                        {step.label}
+                      </div>
+                      <p className="text-sm leading-6 text-slate-700">{step.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="rounded-2xl border-2 border-primary-300 bg-primary-50 px-3 py-3">
                 <p className="text-lg font-bold text-slate-900">{MIN_PLAYERS}-{MAX_PLAYERS}</p>
@@ -364,15 +404,15 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
         <section className="space-y-3 rounded-[2rem] border-2 border-slate-600/40 bg-white p-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Scoring</p>
-            <h3 className="mt-1 text-xl font-semibold text-slate-900">得点ルール</h3>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Rules</p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-900">ルール</h3>
           </div>
           <Card className="border-2 border-accent-500 bg-accent-50 shadow-none hover:border-accent-500 hover:bg-accent-50">
             <ul className="space-y-3 text-sm leading-6 text-slate-700">
-              {scoreIdeas.map((idea) => (
-                <li key={idea} className="flex gap-3">
+              {ruleItems.map((rule) => (
+                <li key={rule} className="flex gap-3">
                   <span className="mt-2 h-2 w-2 rounded-full bg-accent-500" />
-                  <span>{idea}</span>
+                  <span>{rule}</span>
                 </li>
               ))}
             </ul>
