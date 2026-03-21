@@ -302,28 +302,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
               </Button>
             </div>
 
-            <div className="space-y-3 rounded-[1.75rem] border-2 border-slate-600/40 bg-slate-50 p-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Getting Started</p>
-                <h3 className="mt-1 text-lg font-semibold text-slate-900">始め方</h3>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {gettingStartedSteps.map((step) => (
-                  <div
-                    key={step.label}
-                    className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-4"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border-2 border-primary-300 bg-primary-50 text-sm font-bold text-primary-600">
-                        {step.label}
-                      </div>
-                      <p className="text-sm leading-6 text-slate-700">{step.body}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="rounded-2xl border-2 border-primary-300 bg-primary-50 px-3 py-3">
                 <p className="text-lg font-bold text-slate-900">{MIN_PLAYERS}-{MAX_PLAYERS}</p>
@@ -355,6 +333,28 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             </div>
           </Card>
         )}
+
+        <section className="space-y-3 rounded-[2rem] border-2 border-slate-600/40 bg-white p-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Getting Started</p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-900">始め方</h3>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {gettingStartedSteps.map((step) => (
+              <Card
+                key={step.label}
+                className="border-2 border-slate-600/40 bg-slate-50 shadow-none hover:border-slate-600/40 hover:bg-slate-50"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border-2 border-primary-300 bg-primary-50 text-sm font-bold text-primary-600">
+                    {step.label}
+                  </div>
+                  <p className="min-w-0 text-sm leading-6 text-slate-700">{step.body}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
 
         <section className="space-y-3 rounded-[2rem] border-2 border-slate-600/40 bg-white p-4">
           <div>

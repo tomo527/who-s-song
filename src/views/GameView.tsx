@@ -218,6 +218,12 @@ export const GameView: React.FC<GameViewProps> = ({
   const handleAssignGuess = (submissionId: string, guessedPlayerId: string) => {
     setGuesses((previousGuesses) => {
       const filtered = previousGuesses.filter((guess) => guess.submissionId !== submissionId);
+      const currentGuess = previousGuesses.find((guess) => guess.submissionId === submissionId);
+
+      if (currentGuess?.guessedPlayerId === guessedPlayerId) {
+        return filtered;
+      }
+
       return [...filtered, { submissionId, guessedPlayerId }];
     });
   };
@@ -471,6 +477,9 @@ export const GameView: React.FC<GameViewProps> = ({
             <p className="mt-2 text-sm text-slate-600">
               誰の曲かを1つずつ割り当ててください。同じ人を複数の曲に重ねて選ぶことはできません。
             </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              確定前なら何度でも選び直せます。同じ名前をもう一度押すと、その選択を解除できます。
+            </p>
             {countdownState && (
               <div className="mt-3">
                 <CountdownNotice
@@ -521,11 +530,6 @@ export const GameView: React.FC<GameViewProps> = ({
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="break-words text-xl font-semibold text-slate-950">{submission.songName}</p>
-                        {submission.comment && (
-                          <p className="mt-2 rounded-2xl border-2 border-slate-300 bg-white px-3 py-2 text-sm italic leading-relaxed text-slate-600">
-                            "{submission.comment}"
-                          </p>
-                        )}
                       </div>
                     </div>
 
