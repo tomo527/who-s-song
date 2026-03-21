@@ -346,7 +346,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 className="border-2 border-slate-600/40 bg-slate-50 shadow-none hover:border-slate-600/40 hover:bg-slate-50"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border-2 border-primary-300 bg-primary-50 text-sm font-bold text-primary-600">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-500 text-sm font-bold text-white">
                     {step.label}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -412,8 +412,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
           <Card className="border-2 border-accent-500 bg-accent-50 shadow-none hover:border-accent-500 hover:bg-accent-50">
             <ul className="space-y-3 text-sm leading-6 text-slate-700">
               {ruleItems.map((rule) => (
-                <li key={rule} className="flex gap-3">
-                  <span className="mt-2 h-2 w-2 rounded-full bg-accent-500" />
+                <li key={rule} className="flex items-start gap-3">
+                  <span className="mt-[0.55rem] h-2.5 w-2.5 shrink-0 rounded-full bg-accent-500" />
                   <span>{rule}</span>
                 </li>
               ))}
