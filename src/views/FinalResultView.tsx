@@ -56,6 +56,7 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
   const winner = rankedPlayers[0] ?? null;
   const isHost = currentPlayerId === room.hostId;
   const currentGameId = getCurrentGameId(room);
+  const topMutualRates = useMemo(() => stats?.mutualRates.slice(0, 3) ?? [], [stats]);
 
   useEffect(() => {
     let cancelled = false;
@@ -234,6 +235,41 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
             </div>
           )}
         </Card>
+
+        {!statsLoading && !statsError && topMutualRates.length > 0 && (
+          <Card className={flatCardClass}>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Mutual Match</p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900">うちとけ度 TOP3</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                お互いをどれだけ当て合えたかを、相性の高い組み合わせだけに絞って表示しています。
+              </p>
+            </div>
+            <div className="mt-4 space-y-3">
+              {topMutualRates.map((mutualRate, index) => (
+                <div
+                  key={mutualRate.pairKey}
+                  className="flex items-center gap-4 rounded-2xl border-2 border-slate-300 bg-white px-4 py-4"
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-2 border-primary-300 bg-primary-50 text-sm font-semibold text-primary-600">
+                    {index + 1}位
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {mutualRate.leftPlayerName} × {mutualRate.rightPlayerName}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      {mutualRate.correct} / {mutualRate.total} ターンで一致
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-semibold text-primary-600">{mutualRate.rate}%</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <div className="space-y-4 pt-12">
           <Button
