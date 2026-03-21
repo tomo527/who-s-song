@@ -197,6 +197,31 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
             </p>
           </div>
 
+          <div className="rounded-3xl border-2 border-slate-300 bg-white px-5 py-5">
+            <div className="border-b border-slate-200 pb-3">
+              <p className="text-sm font-semibold text-slate-900">スタッツの見方</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                3つの指標を見ると、理解する力と理解される力の両方を分けて確認できます。
+              </p>
+            </div>
+            <div className="mt-4 space-y-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-900">総合正答率</p>
+                <p className="text-sm leading-6 text-slate-600">
+                  親側で当てた割合と、プレイヤー側で当ててもらった割合を合計した全体での正答率。どれだけ参加者のことを理解し、理解されていたかの総合得点
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-900">親ターンの時に当てた割合</p>
+                <p className="text-sm leading-6 text-slate-600">どれだけ他の参加者のことを理解しているか</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-900">プレイヤー側で当ててもらった割合</p>
+                <p className="text-sm leading-6 text-slate-600">どれだけ他の参加者に理解されているか</p>
+              </div>
+            </div>
+          </div>
+
           {statsLoading ? (
             <p className="text-sm text-slate-600">stats を読み込み中です...</p>
           ) : statsError ? (
@@ -209,38 +234,6 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
             </div>
           )}
         </Card>
-
-        {!statsLoading && !statsError && stats && stats.mutualRates.length > 0 && (
-          <Card className={flatCardClass}>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Mutual Understanding</p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-900">相互理解率</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                2人の組み合わせごとに、お互いをどれだけ当てられたかを表示しています。
-              </p>
-            </div>
-            <div className="mt-4 space-y-3">
-              {stats.mutualRates.map((mutualRate) => (
-                <div
-                  key={mutualRate.pairKey}
-                  className="flex items-center justify-between gap-3 rounded-2xl border-2 border-slate-300 bg-white px-4 py-4"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {mutualRate.leftPlayerName} × {mutualRate.rightPlayerName}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {mutualRate.correct} / {mutualRate.total} ターンで一致
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-semibold text-primary-600">{mutualRate.rate}%</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
 
         <div className="space-y-4 pt-12">
           <Button
