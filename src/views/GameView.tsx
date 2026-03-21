@@ -277,14 +277,14 @@ export const GameView: React.FC<GameViewProps> = ({
                         ランダム候補を見ながら自由入力でも決められます。確定後に提出画面へ進みます。
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      fullWidth
-                      onClick={() => setDraftTheme((current) => getRandomPrompt(current))}
-                    >
-                      ランダムなお題を表示
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        fullWidth
+                        onClick={() => setDraftTheme(() => getRandomPrompt())}
+                      >
+                        ランダムなお題を表示
+                      </Button>
                     <Input
                       tone="light"
                       label="今回のお題"
