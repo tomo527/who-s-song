@@ -339,7 +339,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Getting Started</p>
             <h3 className="mt-1 text-xl font-semibold text-slate-900">始め方</h3>
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3">
             {gettingStartedSteps.map((step) => (
               <Card
                 key={step.label}
@@ -349,7 +349,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border-2 border-primary-300 bg-primary-50 text-sm font-bold text-primary-600">
                     {step.label}
                   </div>
-                  <p className="min-w-0 text-sm leading-6 text-slate-700">{step.body}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base leading-7 text-slate-700">{step.body}</p>
+                  </div>
                 </div>
               </Card>
             ))}
