@@ -10,6 +10,7 @@ import {
   subscribeSubmissions,
 } from '../firebase/game';
 import { getGameEndTurn, shouldFinishGameAfterRound } from '../logic/gameProgress';
+import { isDuplicateSubmissionGroup, isGuessCorrectForSubmission } from '../logic/guessEvaluation';
 import { getRotatingParent } from '../logic/parentRotation';
 import type { Guess, Player, Round, Room, Submission } from '../types';
 
@@ -152,7 +153,11 @@ export const ResultView: React.FC<ResultViewProps> = ({
             const guessAnswer = guess?.answers.find((answer) => answer.submissionId === submission.id);
             const guessedPlayer = players.find((player) => player.id === guessAnswer?.guessedPlayerId);
             const hasAnswer = Boolean(guessAnswer);
-            const isCorrect = hasAnswer && guessAnswer?.guessedPlayerId === submission.playerId;
+            const isCorrect = hasAnswer && isGuessCorrectForSubmission(submission, guessAnswer?.guessedPlayerId, submissions);
+            const isDuplicateGroupCorrect =
+              isCorrect
+              && isDuplicateSubmissionGroup(submission, submissions)
+              && guessAnswer?.guessedPlayerId !== submission.playerId;
 
             return (
               <Card
@@ -223,6 +228,11 @@ export const ResultView: React.FC<ResultViewProps> = ({
                       ? `${currentParent?.name || 'Game Master'} の回答は正解でした。`
                       : `${currentParent?.name || 'Game Master'} は ${guessedPlayer?.name || '未回答'} と答えました。`}
                   </p>
+                  {isDuplicateGroupCorrect && (
+                    <p className="text-xs leading-5 text-emerald-700">
+                      同じ曲名の提出が複数あったため、同一回答グループ内の回答として正解扱いです。
+                    </p>
+                  )}
                 </div>
               </Card>
             );

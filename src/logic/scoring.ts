@@ -1,4 +1,5 @@
 import type { Guess, Player, RoomSettings, Submission } from '../types';
+import { isGuessCorrectForSubmission } from './guessEvaluation';
 
 export const calculateScores = (
   players: Player[],
@@ -15,7 +16,7 @@ export const calculateScores = (
   for (const guess of guesses) {
     for (const answer of guess.answers) {
       const targetSubmission = submissions.find((submission) => submission.id === answer.submissionId);
-      if (targetSubmission && targetSubmission.playerId === answer.guessedPlayerId) {
+      if (targetSubmission && isGuessCorrectForSubmission(targetSubmission, answer.guessedPlayerId, submissions)) {
         scoreMap[guess.playerId] = (scoreMap[guess.playerId] || 0) + scoring.correctGuess;
       }
     }
@@ -27,8 +28,8 @@ export const calculateScores = (
     const ownerId = submission.playerId;
     const guessedByParent = guesses.some((guess) =>
       guess.answers.some(
-        (answer) =>
-          answer.submissionId === submission.id && answer.guessedPlayerId === ownerId,
+        (answer) => answer.submissionId === submission.id
+          && isGuessCorrectForSubmission(submission, answer.guessedPlayerId, submissions),
       ),
     );
 

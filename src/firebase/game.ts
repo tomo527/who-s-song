@@ -40,6 +40,7 @@ export const createRound = async (
     phase: 'submitting',
     parentPlayerId,
     startedAt: serverTimestamp(),
+    phaseStartedAt: serverTimestamp(),
   });
 
   await updateDoc(doc(db, 'rooms', roomId), {
@@ -84,7 +85,10 @@ export const updateRoundPhase = async (
     }
   }
 
-  await updateDoc(roundRef, { phase });
+  await updateDoc(roundRef, {
+    phase,
+    phaseStartedAt: serverTimestamp(),
+  });
 };
 
 export const updateRoundTheme = async (
@@ -117,6 +121,7 @@ export const updateRoundTheme = async (
 
   await updateDoc(roundRef, {
     theme: trimmedTheme,
+    phaseStartedAt: serverTimestamp(),
   });
 };
 

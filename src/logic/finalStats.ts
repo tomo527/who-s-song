@@ -1,4 +1,5 @@
 import type { Guess, GuessAnswer, Player, Round, Submission } from '../types';
+import { isGuessCorrectForSubmission } from './guessEvaluation';
 
 type DirectionalRate = {
   otherPlayerId: string;
@@ -84,7 +85,7 @@ export const buildFinalStats = (
     for (const submission of roundSubmissions) {
       const submissionOwner = submission.playerId;
       const answer = guess ? findAnswer(guess.answers, submission.id) : undefined;
-      const guessedCorrectly = answer?.guessedPlayerId === submissionOwner;
+      const guessedCorrectly = isGuessCorrectForSubmission(submission, answer?.guessedPlayerId, roundSubmissions);
       const parentCounter = playerCounters.get(parentId);
       const submissionCounter = playerCounters.get(submissionOwner);
 

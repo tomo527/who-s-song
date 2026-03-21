@@ -3,7 +3,6 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
-import { formatTimeLimit } from '../constants/game';
 import { getRandomPrompt } from '../constants/prompts';
 import {
   subscribePlayerGuess,
@@ -28,11 +27,38 @@ interface GameViewProps {
   players: Player[];
 }
 
+type FirestoreTimestampLike = {
+  toMillis: () => number;
+};
+
 const panelClass = 'rounded-[2rem] border-2 border-slate-600/40 bg-white p-5 text-slate-900';
 const flatCardClass = 'border-2 border-slate-600/40 bg-slate-100 shadow-none hover:border-slate-600/40 hover:bg-slate-100';
 const primaryCardClass = 'border-2 border-primary-400 bg-primary-50 shadow-none hover:border-primary-400 hover:bg-primary-50';
 const accentCardClass = 'border-2 border-accent-500 bg-accent-50 shadow-none hover:border-accent-500 hover:bg-accent-50';
 const successCardClass = 'border-2 border-emerald-400 bg-emerald-50 shadow-none hover:border-emerald-400 hover:bg-emerald-50';
+
+const toMillis = (value: unknown): number | null => {
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  if (
+    value
+    && typeof value === 'object'
+    && 'toMillis' in value
+    && typeof (value as FirestoreTimestampLike).toMillis === 'function'
+  ) {
+    return (value as FirestoreTimestampLike).toMillis();
+  }
+
+  return null;
+};
+
+const formatCountdown = (remainingSeconds: number): string => {
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = remainingSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
 
 export const GameView: React.FC<GameViewProps> = ({
   roomId,
@@ -52,6 +78,7 @@ export const GameView: React.FC<GameViewProps> = ({
   const [isGuessSubmitted, setIsGuessSubmitted] = useState(false);
   const [guesses, setGuesses] = useState<GuessAnswer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     setDraftTheme(round?.theme?.trim() ? round.theme : getRandomPrompt());
@@ -102,6 +129,64 @@ export const GameView: React.FC<GameViewProps> = ({
   const allRequiredSubmissionsIn = submissions.length === submittingPlayers.length;
   const isThemeReady = Boolean(round?.theme?.trim());
   const parentPlayer = players.find((player) => player.id === round?.parentPlayerId);
+  const countdownConfig = useMemo(() => {
+    if (!round) {
+      return null;
+    }
+
+    if (round.phase === 'submitting') {
+      if (!isThemeReady || submitTimeLimit == null) {
+        return null;
+      }
+
+      const startedAtMs = toMillis((round as Round & { phaseStartedAt?: unknown }).phaseStartedAt ?? round.startedAt);
+      return startedAtMs == null
+        ? null
+        : { label: '提出時間の目安', startedAtMs, durationSeconds: submitTimeLimit };
+    }
+
+    if (round.phase === 'guessing') {
+      if (guessTimeLimit == null) {
+        return null;
+      }
+
+      const startedAtMs = toMillis((round as Round & { phaseStartedAt?: unknown }).phaseStartedAt ?? round.startedAt);
+      return startedAtMs == null
+        ? null
+        : { label: 'Game Master 推理時間の目安', startedAtMs, durationSeconds: guessTimeLimit };
+    }
+
+    return null;
+  }, [guessTimeLimit, isThemeReady, round, submitTimeLimit]);
+  const countdownState = useMemo(() => {
+    if (!countdownConfig) {
+      return null;
+    }
+
+    const elapsedSeconds = Math.max(0, Math.floor((now - countdownConfig.startedAtMs) / 1000));
+    const remainingSeconds = Math.max(countdownConfig.durationSeconds - elapsedSeconds, 0);
+
+    return {
+      label: countdownConfig.label,
+      remainingSeconds,
+      expired: elapsedSeconds >= countdownConfig.durationSeconds,
+    };
+  }, [countdownConfig, now]);
+
+  useEffect(() => {
+    if (!countdownConfig) {
+      return;
+    }
+
+    setNow(Date.now());
+    const timerId = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, [countdownConfig]);
 
   const handleSubmitSong = async () => {
     if (!songName.trim() || isParent) {
@@ -255,9 +340,13 @@ export const GameView: React.FC<GameViewProps> = ({
             <p className="max-w-xl text-sm leading-6 text-slate-600">
               親以外の全員が、このお題に合う曲を匿名で提出します。
             </p>
-            <div className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-              提出時間: {formatTimeLimit(submitTimeLimit)}
-            </div>
+            {countdownState && (
+              <CountdownNotice
+                label={countdownState.label}
+                remainingSeconds={countdownState.remainingSeconds}
+                expired={countdownState.expired}
+              />
+            )}
           </Card>
 
           {isParent ? (
@@ -358,6 +447,15 @@ export const GameView: React.FC<GameViewProps> = ({
             <p className="mt-3 text-sm leading-6 text-slate-600">
               {parentPlayer?.name || '親プレイヤー'} が提出曲の持ち主を考えています。結果表示までお待ちください。
             </p>
+            {countdownState && (
+              <div className="mt-4">
+                <CountdownNotice
+                  label={countdownState.label}
+                  remainingSeconds={countdownState.remainingSeconds}
+                  expired={countdownState.expired}
+                />
+              </div>
+            )}
           </Card>
         </Layout>
       );
@@ -373,9 +471,15 @@ export const GameView: React.FC<GameViewProps> = ({
             <p className="mt-2 text-sm text-slate-600">
               誰の曲かを1つずつ割り当ててください。同じ人を複数の曲に重ねて選ぶことはできません。
             </p>
-            <div className="mt-3 inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-              Game Master 推理時間: {formatTimeLimit(guessTimeLimit)}
-            </div>
+            {countdownState && (
+              <div className="mt-3">
+                <CountdownNotice
+                  label={countdownState.label}
+                  remainingSeconds={countdownState.remainingSeconds}
+                  expired={countdownState.expired}
+                />
+              </div>
+            )}
           </Card>
 
           <div className="space-y-1 text-center">
@@ -484,6 +588,27 @@ export const GameView: React.FC<GameViewProps> = ({
     </Layout>
   );
 };
+
+function CountdownNotice({
+  label,
+  remainingSeconds,
+  expired,
+}: {
+  label: string;
+  remainingSeconds: number;
+  expired: boolean;
+}) {
+  return (
+    <div className="inline-flex flex-col rounded-2xl border-2 border-slate-300 bg-white px-4 py-3 text-left">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</p>
+      <div className="mt-2 flex items-end gap-2">
+        <p className="text-2xl font-semibold text-slate-900">{formatCountdown(remainingSeconds)}</p>
+        {expired && <span className="text-xs font-semibold text-red-600">目安時間を過ぎています</span>}
+      </div>
+      <p className="mt-2 text-xs leading-5 text-slate-500">0になっても自動では進行しません。</p>
+    </div>
+  );
+}
 
 function SubmissionProgressCard({
   players,

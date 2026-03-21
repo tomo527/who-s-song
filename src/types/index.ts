@@ -42,6 +42,7 @@ export interface Round {
   phase: RoundPhase;
   parentPlayerId: string;
   startedAt: number;
+  phaseStartedAt?: number;
   scoreFinalized?: boolean; // 追加: スコア計算済みフラグ
   finalizedAt?: number;      // 追加: 確定日時
   finalizedBy?: string;      // 追加: 確定させたホストのID
