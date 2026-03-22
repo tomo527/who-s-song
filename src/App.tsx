@@ -257,6 +257,7 @@ function App() {
         playerId={currentPlayerId}
         isHost={isActualHost}
         roomGenre={room.settings.genre || ''}
+        themeTimeLimit={room.settings.themeTimeLimit ?? null}
         submitTimeLimit={room.settings.submitTimeLimit ?? null}
         guessTimeLimit={room.settings.guessTimeLimit ?? null}
         round={currentRound}

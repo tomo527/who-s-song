@@ -15,7 +15,17 @@ export const TIME_LIMIT_OPTIONS: Array<{ label: string; value: TimeLimitSetting 
   { label: 'なし', value: null },
 ];
 
+export const THEME_TIME_LIMIT_OPTIONS: Array<{ label: string; value: TimeLimitSetting }> = [
+  { label: '1分', value: 60 },
+  { label: '2分', value: 120 },
+  { label: 'なし', value: null },
+];
+
 export const formatTimeLimit = (value: TimeLimitSetting | undefined): string => {
+  if (value === 60) {
+    return '1分';
+  }
+
   if (value === 120) {
     return '2分';
   }
@@ -30,6 +40,7 @@ export const formatTimeLimit = (value: TimeLimitSetting | undefined): string => 
 export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   roundsCount: MINIMUM_GAME_TURNS,
   genre: '',
+  themeTimeLimit: null,
   submitTimeLimit: null,
   guessTimeLimit: null,
   scoring: DEFAULT_SCORING,

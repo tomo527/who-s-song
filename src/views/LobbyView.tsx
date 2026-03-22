@@ -133,7 +133,11 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           <div className="space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Room Settings</p>
             <h3 className="text-xl font-semibold text-slate-900">時間制限の設定</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Theme</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">{formatTimeLimit(room.settings.themeTimeLimit)}</p>
+              </div>
               <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Submit</p>
                 <p className="mt-2 text-base font-semibold text-slate-900">{formatTimeLimit(room.settings.submitTimeLimit)}</p>

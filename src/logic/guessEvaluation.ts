@@ -28,3 +28,17 @@ export const isDuplicateSubmissionGroup = (
   submission: Submission,
   submissions: Submission[],
 ): boolean => getEquivalentSubmissions(submission, submissions).length > 1;
+
+export const getNormalizedGuessedPlayerIdForSubmission = (
+  submission: Submission,
+  guessedPlayerId: string | undefined,
+  submissions: Submission[],
+): string | undefined => {
+  if (!guessedPlayerId) {
+    return undefined;
+  }
+
+  return isGuessCorrectForSubmission(submission, guessedPlayerId, submissions)
+    ? submission.playerId
+    : guessedPlayerId;
+};

@@ -1,10 +1,11 @@
 export type GameStatus = 'waiting' | 'active' | 'finished';
 export type RoundPhase = 'submitting' | 'guessing' | 'revealing';
-export type TimeLimitSetting = 120 | 300 | null;
+export type TimeLimitSetting = 60 | 120 | 300 | null;
 
 export interface RoomSettings {
   roundsCount: number;
   genre: string;
+  themeTimeLimit: TimeLimitSetting;
   submitTimeLimit: TimeLimitSetting;
   guessTimeLimit: TimeLimitSetting;
   scoring: {
@@ -18,7 +19,7 @@ export interface Room {
   roomCode: string;
   hostId: string;
   currentRoundId: string;
-  currentRoundNumber: number; // 追加: 現在のラウンド番号 (1-indexed)
+  currentRoundNumber: number;
   currentGameId: number;
   status: GameStatus;
   settings: RoomSettings;
@@ -43,16 +44,16 @@ export interface Round {
   parentPlayerId: string;
   startedAt: number;
   phaseStartedAt?: number;
-  scoreFinalized?: boolean; // 追加: スコア計算済みフラグ
-  finalizedAt?: number;      // 追加: 確定日時
-  finalizedBy?: string;      // 追加: 確定させたホストのID
+  scoreFinalized?: boolean;
+  finalizedAt?: number;
+  finalizedBy?: string;
 }
 
 export interface Submission {
   id: string;
   gameId: number;
   roundId: string;
-  playerId: string; // 内部管理用
+  playerId: string;
   songName: string;
   comment?: string;
 }
@@ -63,7 +64,7 @@ export interface GuessAnswer {
 }
 
 export interface Guess {
-  id: string; // playerId + roundId の組み合わせ
+  id: string;
   gameId: number;
   roundId: string;
   playerId: string;

@@ -7,12 +7,14 @@ import {
   DEFAULT_ROOM_SETTINGS,
   MAX_PLAYERS,
   MIN_PLAYERS,
+  THEME_TIME_LIMIT_OPTIONS,
   TIME_LIMIT_OPTIONS,
   formatTimeLimit,
 } from '../constants/game';
 import { loginAnonymously } from '../firebase/auth';
 import { getPlayerCount, upsertPlayer } from '../firebase/player';
 import { createRoom, findRoomByCode } from '../firebase/room';
+import type { TimeLimitSetting } from '../types';
 
 type View = 'home' | 'create' | 'join';
 
@@ -87,6 +89,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [genre, setGenre] = useState('');
+  const [themeTimeLimit, setThemeTimeLimit] = useState(DEFAULT_ROOM_SETTINGS.themeTimeLimit);
   const [submitTimeLimit, setSubmitTimeLimit] = useState(DEFAULT_ROOM_SETTINGS.submitTimeLimit);
   const [guessTimeLimit, setGuessTimeLimit] = useState(DEFAULT_ROOM_SETTINGS.guessTimeLimit);
   const [loading, setLoading] = useState(false);
@@ -160,6 +163,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
       const room = await createRoom(playerId, {
         ...DEFAULT_ROOM_SETTINGS,
         genre: genre.trim(),
+        themeTimeLimit,
         submitTimeLimit,
         guessTimeLimit,
       });
@@ -207,6 +211,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 tone="light"
                 value={genre}
                 onChange={(event) => setGenre(event.target.value)}
+              />
+              <TimeLimitSelector
+                label="Game Master お題選択時間"
+                helperText={`現在の設定: ${formatTimeLimit(themeTimeLimit)}`}
+                value={themeTimeLimit}
+                onChange={setThemeTimeLimit}
+                options={THEME_TIME_LIMIT_OPTIONS}
               />
               <TimeLimitSelector
                 label="プレイヤー提出時間"
@@ -430,11 +441,13 @@ function TimeLimitSelector({
   helperText,
   value,
   onChange,
+  options = TIME_LIMIT_OPTIONS,
 }: {
   label: string;
   helperText: string;
-  value: (typeof TIME_LIMIT_OPTIONS)[number]['value'];
-  onChange: (value: (typeof TIME_LIMIT_OPTIONS)[number]['value']) => void;
+  value: TimeLimitSetting;
+  onChange: (value: TimeLimitSetting) => void;
+  options?: Array<{ label: string; value: TimeLimitSetting }>;
 }) {
   return (
     <div className="space-y-3">
@@ -443,7 +456,7 @@ function TimeLimitSelector({
         <p className="mt-1 text-xs leading-5 text-slate-500">{helperText}</p>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        {TIME_LIMIT_OPTIONS.map((option) => {
+        {options.map((option) => {
           const selected = option.value === value;
 
           return (

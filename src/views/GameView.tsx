@@ -21,6 +21,7 @@ interface GameViewProps {
   playerId: string;
   isHost: boolean;
   roomGenre: string;
+  themeTimeLimit: TimeLimitSetting;
   submitTimeLimit: TimeLimitSetting;
   guessTimeLimit: TimeLimitSetting;
   round: Round | null;
@@ -65,6 +66,7 @@ export const GameView: React.FC<GameViewProps> = ({
   roundId,
   playerId,
   roomGenre,
+  themeTimeLimit,
   submitTimeLimit,
   guessTimeLimit,
   round,
@@ -135,7 +137,18 @@ export const GameView: React.FC<GameViewProps> = ({
     }
 
     if (round.phase === 'submitting') {
-      if (!isThemeReady || submitTimeLimit == null) {
+      const themeStartedAtMs = toMillis((round as Round & { phaseStartedAt?: unknown }).phaseStartedAt ?? round.startedAt);
+      if (themeStartedAtMs == null) {
+        return null;
+      }
+
+      if (!isThemeReady) {
+        return themeTimeLimit == null
+          ? null
+          : { label: 'Game Master お題選択時間', startedAtMs: themeStartedAtMs, durationSeconds: themeTimeLimit };
+      }
+
+      if (submitTimeLimit == null) {
         return null;
       }
 
@@ -157,7 +170,7 @@ export const GameView: React.FC<GameViewProps> = ({
     }
 
     return null;
-  }, [guessTimeLimit, isThemeReady, round, submitTimeLimit]);
+  }, [guessTimeLimit, isThemeReady, round, submitTimeLimit, themeTimeLimit]);
   const countdownState = useMemo(() => {
     if (!countdownConfig) {
       return null;
@@ -268,6 +281,13 @@ export const GameView: React.FC<GameViewProps> = ({
                     ジャンルは <span className="font-semibold text-slate-900">{roomGenre || '未設定'}</span> です。
                     親が今回のお題を決めると、提出フェーズが始まります。
                   </p>
+                  {countdownState && (
+                    <CountdownNotice
+                      label={countdownState.label}
+                      remainingSeconds={countdownState.remainingSeconds}
+                      expired={countdownState.expired}
+                    />
+                  )}
                 </div>
               </Card>
 
@@ -320,6 +340,13 @@ export const GameView: React.FC<GameViewProps> = ({
                         ? `${parentPlayer.name} さんがお題を設定すると、この画面が提出フォームに切り替わります。`
                         : '親プレイヤー情報を読み込み中です。'}
                     </p>
+                    {countdownState && (
+                      <CountdownNotice
+                        label={countdownState.label}
+                        remainingSeconds={countdownState.remainingSeconds}
+                        expired={countdownState.expired}
+                      />
+                    )}
                   </div>
                 </Card>
               )}

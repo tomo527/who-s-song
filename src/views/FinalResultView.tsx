@@ -37,6 +37,24 @@ const getRankedPlayers = (players: Player[]): RankedPlayer[] => {
 const formatRate = (rate: number, correct: number, total: number) =>
   total > 0 ? `${rate}% (${correct}/${total})` : 'データなし';
 
+const formatHighlightRate = (players: PlayerFinalStats[], type: 'parent' | 'identified') => {
+  if (players.length === 0) {
+    return '';
+  }
+
+  const firstPlayer = players[0];
+
+  if (type === 'parent') {
+    return players.length === 1
+      ? `${firstPlayer.parentHitRate}% (${firstPlayer.parentCorrect}/${firstPlayer.parentTotal})`
+      : `同率1位 ${firstPlayer.parentHitRate}%`;
+  }
+
+  return players.length === 1
+    ? `${firstPlayer.identifiedRate}% (${firstPlayer.identifiedCorrect}/${firstPlayer.identifiedTotal})`
+    : `同率1位 ${firstPlayer.identifiedRate}%`;
+};
+
 const flatCardClass = 'border-2 border-slate-600/40 bg-slate-100 shadow-none hover:border-slate-600/40 hover:bg-slate-100';
 
 export const FinalResultView: React.FC<FinalResultViewProps> = ({
@@ -57,6 +75,32 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
   const isHost = currentPlayerId === room.hostId;
   const currentGameId = getCurrentGameId(room);
   const topMutualRates = useMemo(() => stats?.mutualRates.slice(0, 3) ?? [], [stats]);
+  const topParentReaders = useMemo(() => {
+    if (!stats) {
+      return [];
+    }
+
+    const candidates = stats.players.filter((playerStat) => playerStat.parentTotal > 0);
+    if (candidates.length === 0) {
+      return [];
+    }
+
+    const topRate = Math.max(...candidates.map((playerStat) => playerStat.parentHitRate));
+    return candidates.filter((playerStat) => playerStat.parentHitRate === topRate);
+  }, [stats]);
+  const topIdentifiedPlayers = useMemo(() => {
+    if (!stats) {
+      return [];
+    }
+
+    const candidates = stats.players.filter((playerStat) => playerStat.identifiedTotal > 0);
+    if (candidates.length === 0) {
+      return [];
+    }
+
+    const topRate = Math.max(...candidates.map((playerStat) => playerStat.identifiedRate));
+    return candidates.filter((playerStat) => playerStat.identifiedRate === topRate);
+  }, [stats]);
 
   useEffect(() => {
     let cancelled = false;
@@ -274,6 +318,39 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
                   </div>
                 </div>
               ))}
+            </div>
+          </Card>
+        )}
+
+        {!statsLoading && !statsError && (topParentReaders.length > 0 || topIdentifiedPlayers.length > 0) && (
+          <Card className={flatCardClass}>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Highlights</p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900">ハイライト</h3>
+            </div>
+            <div className="mt-4 space-y-3">
+              {topParentReaders.length > 0 && (
+                <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-900">参加メンバーのことを最も理解している人</p>
+                  <p className="mt-2 text-base font-semibold text-primary-600">
+                    {topParentReaders.map((playerStat) => playerStat.playerName).join(' / ')}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    {formatHighlightRate(topParentReaders, 'parent')}
+                  </p>
+                </div>
+              )}
+              {topIdentifiedPlayers.length > 0 && (
+                <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-900">参加メンバーに最も理解されている人</p>
+                  <p className="mt-2 text-base font-semibold text-primary-600">
+                    {topIdentifiedPlayers.map((playerStat) => playerStat.playerName).join(' / ')}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    {formatHighlightRate(topIdentifiedPlayers, 'identified')}
+                  </p>
+                </div>
+              )}
             </div>
           </Card>
         )}

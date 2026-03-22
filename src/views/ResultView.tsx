@@ -10,7 +10,11 @@ import {
   subscribeSubmissions,
 } from '../firebase/game';
 import { getGameEndTurn, shouldFinishGameAfterRound } from '../logic/gameProgress';
-import { isDuplicateSubmissionGroup, isGuessCorrectForSubmission } from '../logic/guessEvaluation';
+import {
+  getNormalizedGuessedPlayerIdForSubmission,
+  isDuplicateSubmissionGroup,
+  isGuessCorrectForSubmission,
+} from '../logic/guessEvaluation';
 import { getRotatingParent } from '../logic/parentRotation';
 import type { Guess, Player, Round, Room, Submission } from '../types';
 
@@ -151,9 +155,14 @@ export const ResultView: React.FC<ResultViewProps> = ({
           {submissions.map((submission) => {
             const author = players.find((player) => player.id === submission.playerId);
             const guessAnswer = guess?.answers.find((answer) => answer.submissionId === submission.id);
-            const guessedPlayer = players.find((player) => player.id === guessAnswer?.guessedPlayerId);
             const hasAnswer = Boolean(guessAnswer);
             const isCorrect = hasAnswer && isGuessCorrectForSubmission(submission, guessAnswer?.guessedPlayerId, submissions);
+            const normalizedGuessedPlayerId = getNormalizedGuessedPlayerIdForSubmission(
+              submission,
+              guessAnswer?.guessedPlayerId,
+              submissions,
+            );
+            const guessedPlayer = players.find((player) => player.id === normalizedGuessedPlayerId);
             const isDuplicateGroupCorrect =
               isCorrect
               && isDuplicateSubmissionGroup(submission, submissions)
