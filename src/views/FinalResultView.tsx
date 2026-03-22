@@ -101,6 +101,10 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
     const topRate = Math.max(...candidates.map((playerStat) => playerStat.identifiedRate));
     return candidates.filter((playerStat) => playerStat.identifiedRate === topRate);
   }, [stats]);
+  const resultsText = useMemo(() => {
+    const lines = rankedPlayers.map((player) => `${player.rank}位 ${player.name} (${player.score}pt)`);
+    return `誰の曲？匿名セトリ推理ゲーム 最終結果\nジャンル: ${room.settings.genre || '未設定'}\n\n${lines.join('\n')}`;
+  }, [rankedPlayers, room.settings.genre]);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,12 +136,20 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
   }, [currentGameId, players, room.id]);
 
   const handleCopyResults = async () => {
-    const lines = rankedPlayers.map((player) => `${player.rank}位 ${player.name} (${player.score}pt)`);
-    const fullText = `誰の曲？匿名セトリ推理ゲーム 最終結果\nジャンル: ${room.settings.genre || '未設定'}\n\n${lines.join('\n')}`;
-
-    await navigator.clipboard.writeText(fullText);
+    await navigator.clipboard.writeText(resultsText);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePostToX = () => {
+    const postText = [
+      '誰の曲？匿名セトリ推理ゲームで遊びました！',
+      resultsText,
+      'https://who-s-song.pages.dev/',
+    ].join('\n');
+    const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(postText)}`;
+
+    window.open(intentUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleRestart = async () => {
@@ -372,6 +384,9 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
           )}
           <Button variant="secondary" fullWidth onClick={handleCopyResults}>
             {copied ? 'コピーしました' : '結果をコピーする'}
+          </Button>
+          <Button variant="secondary" fullWidth onClick={handlePostToX}>
+            Xにポスト
           </Button>
           <Button variant="secondary" fullWidth onClick={onBackToHome}>
             終了してTOPへ戻る
