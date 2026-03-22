@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://who-s-song.pages.dev/sitemap.xml
