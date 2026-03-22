@@ -1,4 +1,4 @@
-import { rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +10,7 @@ const mode = process.argv[2];
 
 const hasNonAsciiPath = /[^\u0000-\u007f]/.test(projectRoot);
 const useWindowsBatchBuild = process.platform === 'win32' && hasNonAsciiPath;
+const googleVerificationFile = 'googled32dc6977d90953d.html';
 
 const run = (cwd, command, args) => {
   const result = spawnSync(command, args, {
@@ -33,6 +34,7 @@ const runDirectBuild = () => {
   }
 
   run(projectRoot, process.execPath, viteArgs);
+  copyGoogleVerificationFile(path.join(projectRoot, 'dist'));
 };
 
 const runWindowsBatchBuild = () => {
@@ -66,9 +68,22 @@ const runWindowsBatchBuild = () => {
 
   try {
     run(projectRoot, 'cmd', ['/c', batchPath]);
+    copyGoogleVerificationFile(path.join(projectRoot, 'dist'));
   } finally {
     rmSync(batchPath, { force: true });
   }
+};
+
+const copyGoogleVerificationFile = (distDir) => {
+  const sourceFile = path.join(projectRoot, 'public', googleVerificationFile);
+  const destinationFile = path.join(distDir, googleVerificationFile);
+
+  if (!existsSync(sourceFile)) {
+    return;
+  }
+
+  mkdirSync(distDir, { recursive: true });
+  copyFileSync(sourceFile, destinationFile);
 };
 
 if (useWindowsBatchBuild) {
