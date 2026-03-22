@@ -12,7 +12,6 @@ import {
 import { getGameEndTurn, shouldFinishGameAfterRound } from '../logic/gameProgress';
 import {
   getNormalizedGuessedPlayerIdForSubmission,
-  isDuplicateSubmissionGroup,
   isGuessCorrectForSubmission,
 } from '../logic/guessEvaluation';
 import { getRotatingParent } from '../logic/parentRotation';
@@ -163,11 +162,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
               submissions,
             );
             const guessedPlayer = players.find((player) => player.id === normalizedGuessedPlayerId);
-            const isDuplicateGroupCorrect =
-              isCorrect
-              && isDuplicateSubmissionGroup(submission, submissions)
-              && guessAnswer?.guessedPlayerId !== submission.playerId;
-
             return (
               <Card
                 key={submission.id}
@@ -237,11 +231,6 @@ export const ResultView: React.FC<ResultViewProps> = ({
                       ? `${currentParent?.name || '親'} の回答は正解でした。`
                       : `${currentParent?.name || '親'} は ${guessedPlayer?.name || '未回答'} と答えました。`}
                   </p>
-                  {isDuplicateGroupCorrect && (
-                    <p className="text-xs leading-5 text-emerald-700">
-                      同じ曲名の提出が複数あったため、同一回答グループ内の回答として正解扱いです。
-                    </p>
-                  )}
                 </div>
               </Card>
             );
