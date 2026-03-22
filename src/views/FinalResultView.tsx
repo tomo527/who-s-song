@@ -142,16 +142,23 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
                 : player.rank === 2
                   ? 'border-slate-400 bg-slate-100'
                   : 'border-orange-400 bg-orange-50';
+            const podiumEmphasis = player.rank === 1 ? 'sm:col-span-2' : '';
+            const badgeClass =
+              player.rank === 1
+                ? 'h-16 w-16 rounded-[1.75rem] text-[1.7rem]'
+                : 'h-14 w-14 rounded-[1.5rem] text-2xl';
+            const nameClass = player.rank === 1 ? 'text-[1.7rem]' : 'text-2xl';
+            const scoreClass = player.rank === 1 ? 'text-[2.8rem]' : 'text-4xl';
 
             return (
-              <Card key={player.id} className={`text-center shadow-none hover:bg-inherit ${podiumStyle}`}>
+              <Card key={player.id} className={`text-center shadow-none hover:bg-inherit ${podiumStyle} ${podiumEmphasis}`}>
                 <div className="py-3">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[1.5rem] border-2 border-slate-300 bg-white text-2xl font-semibold text-slate-900">
+                  <div className={`mx-auto flex items-center justify-center border-2 border-slate-300 bg-white font-semibold text-slate-900 ${badgeClass}`}>
                     {player.rank}
                   </div>
                   <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Player</p>
-                  <h3 className="mt-2 text-2xl font-semibold text-slate-950">{player.name}</h3>
-                  <div className="mt-5 text-4xl font-semibold text-slate-950">
+                  <h3 className={`mt-2 font-semibold text-slate-950 ${nameClass}`}>{player.name}</h3>
+                  <div className={`mt-5 font-semibold text-slate-950 ${scoreClass}`}>
                     {player.score}
                     <span className="ml-1 text-sm text-slate-500">pt</span>
                   </div>
@@ -242,7 +249,7 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Mutual Match</p>
               <h3 className="mt-2 text-xl font-semibold text-slate-900">うちとけ度 TOP3</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                お互いをどれだけ当て合えたかを、相性の高い組み合わせだけに絞って表示しています。
+                お互いに当て合えている割合が高い組み合わせTOP3を表示しています
               </p>
             </div>
             <div className="mt-4 space-y-3">
@@ -325,14 +332,10 @@ export const FinalResultView: React.FC<FinalResultViewProps> = ({
 function PlayerStatsCard({ stat }: { stat: PlayerFinalStats }) {
   return (
     <Card className="space-y-4 border-2 border-slate-400 bg-white shadow-none hover:border-slate-400 hover:bg-white">
-      <div className="flex items-start justify-between gap-3">
+      <div>
         <div>
           <h4 className="text-lg font-semibold text-slate-900">{stat.playerName}</h4>
           <p className="text-sm text-slate-500">{stat.score}pt</p>
-        </div>
-        <div className="rounded-2xl border-2 border-slate-300 bg-slate-100 px-3 py-2 text-right">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Overall</p>
-          <p className="text-lg font-semibold text-slate-900">{stat.overallHitRate}%</p>
         </div>
       </div>
 

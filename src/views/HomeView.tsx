@@ -202,7 +202,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
               />
               <Input
                 label="今回のジャンル"
-                placeholder="例: 邦ロック / ボカロ / アニソン"
+                placeholder="例: コンテンツ名 / アーティスト名 / 曲ジャンル"
                 helperText="ゲーム全体の共通ジャンルです。ロビーであとから変更できます"
                 tone="light"
                 value={genre}
@@ -241,7 +241,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-500">Quick Join</p>
             <h3 className="mt-2 text-2xl font-semibold text-slate-900">コードを入れてすぐ参加</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              通話中でも迷わないよう、参加導線は最短にしています。コードと表示名だけ入力してください。
+              親から共有されたルームコードと、あなたの表示名を入力してください。
             </p>
           </Card>
 
