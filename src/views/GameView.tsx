@@ -145,7 +145,7 @@ export const GameView: React.FC<GameViewProps> = ({
       if (!isThemeReady) {
         return themeTimeLimit == null
           ? null
-          : { label: 'Game Master お題選択時間', startedAtMs: themeStartedAtMs, durationSeconds: themeTimeLimit };
+          : { label: '親お題選択時間', startedAtMs: themeStartedAtMs, durationSeconds: themeTimeLimit };
       }
 
       if (submitTimeLimit == null) {
@@ -166,7 +166,7 @@ export const GameView: React.FC<GameViewProps> = ({
       const startedAtMs = toMillis((round as Round & { phaseStartedAt?: unknown }).phaseStartedAt ?? round.startedAt);
       return startedAtMs == null
         ? null
-        : { label: 'Game Master 推理時間の目安', startedAtMs, durationSeconds: guessTimeLimit };
+        : { label: '親推理時間の目安', startedAtMs, durationSeconds: guessTimeLimit };
     }
 
     return null;
@@ -338,7 +338,7 @@ export const GameView: React.FC<GameViewProps> = ({
                     <p className="text-sm leading-6 text-slate-600">
                       {parentPlayer
                         ? `${parentPlayer.name} さんがお題を設定すると、この画面が提出フォームに切り替わります。`
-                        : '親プレイヤー情報を読み込み中です。'}
+                        : '親情報を読み込み中です。'}
                     </p>
                     {countdownState && (
                       <CountdownNotice
@@ -478,7 +478,7 @@ export const GameView: React.FC<GameViewProps> = ({
           <Card className={`${flatCardClass} py-12 text-center`}>
             <h3 className="text-2xl font-semibold text-slate-900">親が推理中です</h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              {parentPlayer?.name || '親プレイヤー'} が提出曲の持ち主を考えています。結果表示までお待ちください。
+              {parentPlayer?.name || '親'} が提出曲の持ち主を考えています。結果表示までお待ちください。
             </p>
             {countdownState && (
               <div className="mt-4">

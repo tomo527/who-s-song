@@ -62,7 +62,7 @@ const flowSteps = [
   {
     label: '2',
     title: '親がお題を出す',
-    body: '各ターンの親役が、ジャンル内で考えたいお題を決めます。',
+    body: '各ターンの親が、ジャンル内で考えたいお題を決めます。',
   },
   {
     label: '3',
@@ -72,14 +72,14 @@ const flowSteps = [
   {
     label: '4',
     title: '親が誰の曲かを当てる',
-    body: '親役が提出曲を見て、誰が出したかを割り当てます。',
+    body: '親が提出曲を見て、誰が出したかを割り当てます。',
   },
 ];
 
 const ruleItems = [
-  '毎ターン1人が Game Master になり、お題を決めます。ほかの全員は、そのお題に合う曲を匿名で提出します。',
-  'Game Master は、誰がどの曲を出したかを当てます。',
-  '得点は、Game Master として当てること、そして自分らしい選曲で当ててもらうことの両方で入ります。',
+  '毎ターン1人が親になり、お題を決めます。ほかの全員は、そのお題に合う曲を匿名で提出します。',
+  '親は、誰がどの曲を出したかを当てます。',
+  '得点は、親として当てること、そして自分らしい選曲で当ててもらうことの両方で入ります。',
   '同じ曲名を複数人が提出した場合は、そのグループ内の誰を選んでも正解として扱います。',
   '制限時間は進行の目安で、時間切れになっても自動では進みません。',
 ];
@@ -213,7 +213,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 onChange={(event) => setGenre(event.target.value)}
               />
               <TimeLimitSelector
-                label="Game Master お題選択時間"
+                label="親お題選択時間"
                 helperText={`現在の設定: ${formatTimeLimit(themeTimeLimit)}`}
                 value={themeTimeLimit}
                 onChange={setThemeTimeLimit}
@@ -226,7 +226,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 onChange={setSubmitTimeLimit}
               />
               <TimeLimitSelector
-                label="Game Master 推理時間"
+                label="親推理時間"
                 helperText={`現在の設定: ${formatTimeLimit(guessTimeLimit)}`}
                 value={guessTimeLimit}
                 onChange={setGuessTimeLimit}
@@ -299,7 +299,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
                 誰の曲？
               </h2>
               <p className="max-w-md text-base leading-7 text-slate-600">
-                ジャンルを選んでお題に合わせて曲を出し、親役が誰の曲かを当てよう。
+            ジャンルを選んでお題に合わせて曲を出し、親が誰の曲かを当てよう。
                 どんな曲を選びそうか、なぜそれを出したのか。相手の気持ちまで想像して楽しむ推理ゲームです。
               </p>
             </div>

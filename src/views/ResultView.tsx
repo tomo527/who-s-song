@@ -232,10 +232,10 @@ export const ResultView: React.FC<ResultViewProps> = ({
                     }`}
                   >
                     {!hasAnswer
-                      ? 'Game Master の回答を読み込んでいます。'
+                      ? '親の回答を読み込んでいます。'
                       : isCorrect
-                      ? `${currentParent?.name || 'Game Master'} の回答は正解でした。`
-                      : `${currentParent?.name || 'Game Master'} は ${guessedPlayer?.name || '未回答'} と答えました。`}
+                      ? `${currentParent?.name || '親'} の回答は正解でした。`
+                      : `${currentParent?.name || '親'} は ${guessedPlayer?.name || '未回答'} と答えました。`}
                   </p>
                   {isDuplicateGroupCorrect && (
                     <p className="text-xs leading-5 text-emerald-700">
