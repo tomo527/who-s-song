@@ -65,7 +65,17 @@ service cloud.firestore {
         );
         allow update: if isSignedIn() && (
           isHost(roomId) ||
-          resource.data.parentPlayerId == request.auth.uid
+          resource.data.parentPlayerId == request.auth.uid ||
+          (
+            isRoomMember(roomId)
+            && request.auth.uid != resource.data.parentPlayerId
+            && resource.data.phase == 'judging'
+            && request.resource.data.phase == 'revealing'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'phase',
+              'phaseStartedAt',
+            ])
+          )
         );
       }
 
@@ -86,15 +96,32 @@ service cloud.firestore {
               resource.data.playerId == request.auth.uid ||
               (
                 isRoomMember(roomId) &&
-                get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.phase == 'revealing'
+                get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.phase in ['judging', 'revealing']
               ) ||
               get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.scoreFinalized == true
             )
           )
         );
-        allow create, update: if isSignedIn()
+        allow create: if isSignedIn()
           && request.resource.data.playerId == request.auth.uid
           && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(request.resource.data.roundId)).data.parentPlayerId == request.auth.uid;
+        allow update: if isSignedIn() && (
+          (
+            request.resource.data.playerId == request.auth.uid
+            && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(request.resource.data.roundId)).data.parentPlayerId == request.auth.uid
+          ) ||
+          (
+            resource != null
+            && isRoomMember(roomId)
+            && request.auth.uid != resource.data.playerId
+            && get(/databases/$(database)/documents/rooms/$(roomId)/rounds/$(resource.data.roundId)).data.phase == 'judging'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'isTextAnswerCorrect',
+              'judgedByPlayerId',
+            ])
+            && request.resource.data.judgedByPlayerId == request.auth.uid
+          )
+        );
         allow delete: if false;
       }
     }

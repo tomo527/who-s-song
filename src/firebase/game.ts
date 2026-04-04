@@ -12,7 +12,7 @@ import {
   writeBatch,
   where,
 } from 'firebase/firestore';
-import { MIN_PLAYERS } from '../constants/game';
+import { getMinPlayersForMode, getRoomMode } from '../constants/game';
 import { shouldFinishGameAfterRound } from '../logic/gameProgress';
 import { calculateScores } from '../logic/scoring';
 import type { Guess, Player, Round, RoundPhase, Room, Submission } from '../types';
@@ -35,9 +35,15 @@ export const createRound = async (
   gameId: number,
 ): Promise<string> => {
   const db = getDb();
-  const playersSnapshot = await getDocs(collection(db, 'rooms', roomId, 'players'));
-  if (getActivePlayerCount(playersSnapshot.docs) < MIN_PLAYERS) {
-    throw new Error(`${MIN_PLAYERS}人以上集まってから開始してください。`);
+  const [roomSnapshot, playersSnapshot] = await Promise.all([
+    getDoc(doc(db, 'rooms', roomId)),
+    getDocs(collection(db, 'rooms', roomId, 'players')),
+  ]);
+  const room = roomSnapshot.exists() ? ({ id: roomSnapshot.id, ...roomSnapshot.data() } as Room) : null;
+  const minPlayers = getMinPlayersForMode(getRoomMode(room));
+
+  if (getActivePlayerCount(playersSnapshot.docs) < minPlayers) {
+    throw new Error(`${minPlayers}人以上集まってから開始してください。`);
   }
 
   const roundsRef = collection(db, 'rooms', roomId, 'rounds');
@@ -150,7 +156,7 @@ export const submitSong = async (
 
   const round = { id: roundSnapshot.id, ...roundSnapshot.data() } as Round;
   if (round.parentPlayerId === playerId) {
-    throw new Error('親役はこのラウンドでは曲を提出しません。');
+    throw new Error('親はこのラウンドでは曲を提出できません。');
   }
 
   const submissionsRef = collection(db, 'rooms', roomId, 'submissions');
@@ -191,7 +197,7 @@ export const submitGuess = async (
 
   const round = { id: roundSnapshot.id, ...roundSnapshot.data() } as Round;
   if (round.parentPlayerId !== playerId) {
-    throw new Error('このラウンドで推理できるのは親役だけです。');
+    throw new Error('このラウンドで推理できるのは親だけです。');
   }
 
   const guessId = `${playerId}_${roundId}`;
@@ -203,6 +209,88 @@ export const submitGuess = async (
     answers,
     submittedAt: serverTimestamp(),
   });
+};
+
+export const submitTextGuess = async (
+  roomId: string,
+  roundId: string,
+  playerId: string,
+  textAnswer: string,
+): Promise<void> => {
+  const trimmedTextAnswer = textAnswer.trim();
+  if (!trimmedTextAnswer) {
+    throw new Error('回答を入力してください。');
+  }
+
+  const db = getDb();
+  const roundRef = doc(db, 'rooms', roomId, 'rounds', roundId);
+  const roundSnapshot = await getDoc(roundRef);
+
+  if (!roundSnapshot.exists()) {
+    throw new Error('Round not found');
+  }
+
+  const round = { id: roundSnapshot.id, ...roundSnapshot.data() } as Round;
+  if (round.parentPlayerId !== playerId) {
+    throw new Error('このラウンドで回答できるのは親だけです。');
+  }
+
+  if (round.phase !== 'guessing') {
+    throw new Error('回答は推理フェーズでのみ送信できます。');
+  }
+
+  const guessId = `${playerId}_${roundId}`;
+
+  await setDoc(doc(db, 'rooms', roomId, 'guesses', guessId), {
+    gameId: round.gameId,
+    roundId,
+    playerId,
+    answers: [],
+    textAnswer: trimmedTextAnswer,
+    submittedAt: serverTimestamp(),
+  });
+
+  await updateRoundPhase(roomId, roundId, 'judging');
+};
+
+export const judgeTextGuess = async (
+  roomId: string,
+  roundId: string,
+  playerId: string,
+  isCorrect: boolean,
+): Promise<void> => {
+  const db = getDb();
+  const roundRef = doc(db, 'rooms', roomId, 'rounds', roundId);
+  const roundSnapshot = await getDoc(roundRef);
+
+  if (!roundSnapshot.exists()) {
+    throw new Error('Round not found');
+  }
+
+  const round = { id: roundSnapshot.id, ...roundSnapshot.data() } as Round;
+  if (round.phase !== 'judging') {
+    throw new Error('判定は判定フェーズでのみ行えます。');
+  }
+
+  const submissionsSnapshot = await getDocs(
+    query(collection(db, 'rooms', roomId, 'submissions'), where('roundId', '==', roundId)),
+  );
+  const submissions = submissionsSnapshot.docs.map(
+    (submissionDoc) => ({ id: submissionDoc.id, ...submissionDoc.data() }) as Submission,
+  );
+  const targetSubmission = submissions[0];
+
+  if (!targetSubmission || targetSubmission.playerId !== playerId) {
+    throw new Error('このラウンドの判定は提出者だけが行えます。');
+  }
+
+  const guessId = `${round.parentPlayerId}_${roundId}`;
+  await updateDoc(doc(db, 'rooms', roomId, 'guesses', guessId), {
+    isTextAnswerCorrect: isCorrect,
+    judgedByPlayerId: playerId,
+  });
+
+  await updateRoundPhase(roomId, roundId, 'revealing');
 };
 
 export const subscribeRound = (
@@ -288,6 +376,7 @@ export const finalizeRoundScores = async (
     submissions,
     guesses,
     room.settings.scoring,
+    getRoomMode(room),
   );
 
   const batch = writeBatch(db);

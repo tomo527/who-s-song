@@ -1,6 +1,7 @@
 export type GameStatus = 'waiting' | 'active' | 'finished';
-export type RoundPhase = 'submitting' | 'guessing' | 'revealing';
+export type RoundPhase = 'submitting' | 'guessing' | 'judging' | 'revealing';
 export type TimeLimitSetting = 60 | 120 | 300 | null;
+export type RoomMode = 'standard' | 'duo';
 
 export interface RoomSettings {
   roundsCount: number;
@@ -16,6 +17,7 @@ export interface RoomSettings {
 
 export interface Room {
   id: string;
+  mode?: RoomMode;
   roomCode: string;
   hostId: string;
   currentRoundId: string;
@@ -69,4 +71,7 @@ export interface Guess {
   roundId: string;
   playerId: string;
   answers: GuessAnswer[];
+  textAnswer?: string;
+  isTextAnswerCorrect?: boolean;
+  judgedByPlayerId?: string;
 }

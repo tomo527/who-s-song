@@ -4,7 +4,13 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
-import { MAX_PLAYERS, MIN_PLAYERS, MINIMUM_GAME_TURNS, formatTimeLimit } from '../constants/game';
+import {
+  MINIMUM_GAME_TURNS,
+  formatTimeLimit,
+  getMaxPlayersForMode,
+  getMinPlayersForMode,
+  getRoomMode,
+} from '../constants/game';
 import { getDb } from '../firebase/config';
 import { createRound, getCurrentGameId } from '../firebase/game';
 import { getGameEndTurn } from '../logic/gameProgress';
@@ -29,11 +35,14 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   const [draftGenre, setDraftGenre] = useState(room.settings.genre || '');
   const [isStarting, setIsStarting] = useState(false);
 
+  const roomMode = getRoomMode(room);
+  const minPlayers = getMinPlayersForMode(roomMode);
+  const maxPlayers = getMaxPlayersForMode(roomMode);
   const currentParent = useMemo(() => getRotatingParent(players, 1), [players]);
   const isCurrentParent = currentParent?.id === currentPlayerId;
-  const participantsLabel = `${players.length} / ${MAX_PLAYERS}`;
+  const participantsLabel = `${players.length} / ${maxPlayers}`;
   const gameEndTurn = getGameEndTurn(players.length, room.settings.roundsCount || MINIMUM_GAME_TURNS);
-  const canStart = players.length >= MIN_PLAYERS && Boolean(room.settings.genre.trim()) && Boolean(currentParent);
+  const canStart = players.length >= minPlayers && Boolean(room.settings.genre.trim()) && Boolean(currentParent);
 
   const flatCardClass = 'border-2 border-slate-600/40 bg-slate-100 shadow-none hover:border-slate-600/40 hover:bg-slate-100';
 
@@ -52,7 +61,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
       room.status !== 'waiting' ||
       Boolean(room.currentRoundId) ||
       !isCurrentParent ||
-      players.length < MIN_PLAYERS ||
+      players.length < minPlayers ||
       !currentParent ||
       !room.settings.genre.trim()
     ) {
@@ -87,7 +96,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Room Ready</p>
               <h2 className="text-2xl font-semibold text-slate-900">メンバーがそろったら開始できます</h2>
               <p className="text-sm leading-6 text-slate-600">
-                ルーム開始後、そのターンの親がお題を決めてから提出フェーズに入ります。
+                {roomMode === 'duo'
+                  ? '2人そろうと開始できます。ルーム開始後、そのターンの親がお題を決めてから提出フェーズに入ります。'
+                  : 'ルーム開始後、そのターンの親がお題を決めてから提出フェーズに入ります。'}
               </p>
             </div>
 
@@ -133,7 +144,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           <div className="space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Room Settings</p>
             <h3 className="text-xl font-semibold text-slate-900">時間制限の設定</h3>
-            <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Theme</p>
                 <p className="mt-2 text-base font-semibold text-slate-900">{formatTimeLimit(room.settings.themeTimeLimit)}</p>
@@ -160,7 +171,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                   ルーム全体で共有するのはジャンルだけです。お題は各ターンの親があとで決めます。
                 </p>
               </div>
-              <Input
+      <Input
                 tone="light"
                 label="今回のジャンル"
                 placeholder="例: 邦ロック / ボカロ / アニソン"
@@ -190,15 +201,15 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                   開始後、このターンの親であるあなたが最初のお題を決めます。非親はお題確定後に曲を提出します。
                 </p>
               </div>
-              <Button
+      <Button
                 size="xl"
                 fullWidth
                 isLoading={isStarting}
                 disabled={!canStart || isStarting || room.status !== 'waiting' || Boolean(room.currentRoundId)}
                 onClick={handleStart}
               >
-                {players.length < MIN_PLAYERS
-                  ? `${MIN_PLAYERS}人そろうと開始できます`
+                {players.length < minPlayers
+                  ? `${minPlayers}人そろうと開始できます`
                   : !room.settings.genre.trim()
                     ? 'ジャンルを設定すると開始できます'
                     : 'ゲームを開始する'}

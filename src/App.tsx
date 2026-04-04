@@ -4,12 +4,16 @@ import { subscribeRound } from './firebase/game';
 import { firebaseConfigError } from './firebase/config';
 import { waitForAuthReady } from './firebase/auth';
 import { useRoom } from './hooks/useRoom';
+import { getRoomMode } from './constants/game';
 import type { Player, Round } from './types';
 import { FinalResultView } from './views/FinalResultView';
 import { GameView } from './views/GameView';
 import { HomeView } from './views/HomeView';
 import { LobbyView } from './views/LobbyView';
 import { ResultView } from './views/ResultView';
+import { TwoPlayerFinalResultView } from './views/TwoPlayerFinalResultView';
+import { TwoPlayerGameView } from './views/TwoPlayerGameView';
+import { TwoPlayerResultView } from './views/TwoPlayerResultView';
 
 const STORAGE_KEY = 'song_guess_game_state';
 
@@ -213,8 +217,20 @@ function App() {
 
   const currentPlayerId = gameState.playerId || '';
   const isActualHost = currentPlayerId === room.hostId;
+  const roomMode = getRoomMode(room);
 
   if (room.status === 'finished') {
+    if (roomMode === 'duo') {
+      return (
+        <TwoPlayerFinalResultView
+          room={room}
+          players={players}
+          currentPlayerId={currentPlayerId}
+          onBackToHome={handleResetSession}
+        />
+      );
+    }
+
     return (
       <FinalResultView
         room={room}
@@ -239,6 +255,18 @@ function App() {
 
   if (room.status === 'active' && room.currentRoundId) {
     if (currentRound?.phase === 'revealing') {
+      if (roomMode === 'duo') {
+        return (
+          <TwoPlayerResultView
+            room={room}
+            roundId={room.currentRoundId}
+            round={currentRound}
+            players={players}
+            currentPlayerId={currentPlayerId}
+          />
+        );
+      }
+
       return (
         <ResultView
           room={room}
@@ -246,6 +274,22 @@ function App() {
           round={currentRound}
           players={players}
           currentPlayerId={currentPlayerId}
+        />
+      );
+    }
+
+    if (roomMode === 'duo') {
+      return (
+        <TwoPlayerGameView
+          roomId={room.id}
+          roundId={room.currentRoundId}
+          playerId={currentPlayerId}
+          roomGenre={room.settings.genre || ''}
+          themeTimeLimit={room.settings.themeTimeLimit ?? null}
+          submitTimeLimit={room.settings.submitTimeLimit ?? null}
+          guessTimeLimit={room.settings.guessTimeLimit ?? null}
+          round={currentRound}
+          players={players}
         />
       );
     }

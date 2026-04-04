@@ -1,4 +1,4 @@
-import type { Guess, GuessAnswer, Player, Round, Submission } from '../types';
+import type { Guess, GuessAnswer, Player, RoomMode, Round, Submission } from '../types';
 import { isGuessCorrectForSubmission } from './guessEvaluation';
 
 type DirectionalRate = {
@@ -50,6 +50,7 @@ export const buildFinalStats = (
   rounds: Round[],
   submissions: Submission[],
   guesses: Guess[],
+  mode: RoomMode = 'standard',
 ): FinalStatsSummary => {
   const submissionsByRound = new Map<string, Submission[]>();
 
@@ -81,6 +82,40 @@ export const buildFinalStats = (
     const roundSubmissions = submissionsByRound.get(round.id) ?? [];
     const guess = guessesByRound.get(round.id);
     const parentId = round.parentPlayerId;
+
+    if (mode === 'duo') {
+      const submission = roundSubmissions.find((candidate) => candidate.playerId !== parentId);
+      if (!submission) {
+        continue;
+      }
+
+      const guessedCorrectly = guess?.isTextAnswerCorrect === true;
+      const parentCounter = playerCounters.get(parentId);
+      const submissionCounter = playerCounters.get(submission.playerId);
+
+      if (parentCounter) {
+        parentCounter.parentTotal += 1;
+        if (guessedCorrectly) {
+          parentCounter.parentCorrect += 1;
+        }
+      }
+
+      if (submissionCounter) {
+        submissionCounter.identifiedTotal += 1;
+        if (guessedCorrectly) {
+          submissionCounter.identifiedCorrect += 1;
+        }
+      }
+
+      const directionalKey = `${parentId}:${submission.playerId}`;
+      const directionalCounter = directionalCounts.get(directionalKey) ?? { correct: 0, total: 0 };
+      directionalCounter.total += 1;
+      if (guessedCorrectly) {
+        directionalCounter.correct += 1;
+      }
+      directionalCounts.set(directionalKey, directionalCounter);
+      continue;
+    }
 
     for (const submission of roundSubmissions) {
       const submissionOwner = submission.playerId;

@@ -5,16 +5,17 @@ import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
 import {
   DEFAULT_ROOM_SETTINGS,
+  DUO_PLAYERS,
   MAX_PLAYERS,
-  MIN_PLAYERS,
   THEME_TIME_LIMIT_OPTIONS,
   TIME_LIMIT_OPTIONS,
   formatTimeLimit,
+  getMaxPlayersForMode,
 } from '../constants/game';
 import { loginAnonymously } from '../firebase/auth';
 import { getPlayerCount, upsertPlayer } from '../firebase/player';
 import { createRoom, findRoomByCode } from '../firebase/room';
-import type { TimeLimitSetting } from '../types';
+import type { RoomMode, TimeLimitSetting } from '../types';
 
 type View = 'home' | 'create' | 'join';
 
@@ -22,6 +23,10 @@ interface HomeViewProps {
   onJoinRoom: (roomId: string, playerName: string, isHost: boolean, playerId: string) => void;
   startupError?: string | null;
 }
+
+const getModeLabel = (mode: RoomMode) => (mode === 'duo' ? '2人用' : '3人～');
+const getCreateTitle = (mode: RoomMode) => `ルームを作る（${getModeLabel(mode)}）`;
+const getJoinTitle = (mode: RoomMode) => `ルームに参加する（${getModeLabel(mode)}）`;
 
 const valueCards = [
   {
@@ -86,6 +91,7 @@ const ruleItems = [
 
 export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) => {
   const [view, setView] = useState<View>('home');
+  const [mode, setMode] = useState<RoomMode>('standard');
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [genre, setGenre] = useState('');
@@ -94,6 +100,18 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
   const [guessTimeLimit, setGuessTimeLimit] = useState(DEFAULT_ROOM_SETTINGS.guessTimeLimit);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const openCreate = (nextMode: RoomMode) => {
+    setMode(nextMode);
+    setError('');
+    setView('create');
+  };
+
+  const openJoin = (nextMode: RoomMode) => {
+    setMode(nextMode);
+    setError('');
+    setView('join');
+  };
 
   const ensureFirebaseReady = () => {
     if (!startupError) {
@@ -119,21 +137,32 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
     try {
       const playerId = await loginAnonymously();
-      const roomId = await findRoomByCode(roomCode);
+      const room = await findRoomByCode(roomCode);
 
-      if (!roomId) {
+      if (!room) {
         setError('そのルームコードは見つかりませんでした。');
         return;
       }
 
-      const playerCount = await getPlayerCount(roomId);
-      if (playerCount >= MAX_PLAYERS) {
-        setError(`このルームは満員です。最大${MAX_PLAYERS}人まで参加できます。`);
+      const roomMode = room.mode === 'duo' ? 'duo' : 'standard';
+      if (roomMode !== mode) {
+        setError(
+          mode === 'duo'
+            ? 'このルームは3人以上用です。3人以上用の参加ボタンから入室してください。'
+            : 'このルームは2人用です。2人用の参加ボタンから入室してください。',
+        );
         return;
       }
 
-      await upsertPlayer(roomId, playerId, playerName, false);
-      onJoinRoom(roomId, playerName, false, playerId);
+      const precheckedPlayerCount = await getPlayerCount(room.id);
+      const maxPlayers = getMaxPlayersForMode(roomMode);
+      if (precheckedPlayerCount >= maxPlayers) {
+        setError(`このルームは満員です。最大${maxPlayers}人まで参加できます。`);
+        return;
+      }
+
+      await upsertPlayer(room.id, playerId, playerName.trim(), false);
+      onJoinRoom(room.id, playerName.trim(), false, playerId);
     } catch (joinError) {
       setError(
         joinError instanceof Error
@@ -166,7 +195,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
         themeTimeLimit,
         submitTimeLimit,
         guessTimeLimit,
-      });
+      }, mode);
 
       await upsertPlayer(room.id, playerId, playerName.trim(), true);
       onJoinRoom(room.id, playerName.trim(), true, playerId);
@@ -183,7 +212,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
   if (view === 'create') {
     return (
-      <Layout showBack onBack={() => setView('home')} title="ルームを作る">
+      <Layout showBack onBack={() => setView('home')} title={getCreateTitle(mode)}>
         <div className="rounded-[2rem] border-2 border-slate-600/40 bg-white p-5">
           <div className="space-y-5">
           <Card className="border-2 border-primary-500 bg-primary-100 shadow-none hover:border-primary-500 hover:bg-primary-100">
@@ -245,7 +274,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
 
   if (view === 'join') {
     return (
-      <Layout showBack onBack={() => setView('home')} title="ルームに参加する">
+      <Layout showBack onBack={() => setView('home')} title={getJoinTitle(mode)}>
         <div className="rounded-[2rem] border-2 border-slate-600/40 bg-white p-5">
           <div className="space-y-5">
           <Card className="border-2 border-accent-500 bg-accent-100 shadow-none hover:border-accent-500 hover:bg-accent-100">
@@ -305,17 +334,23 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Button size="xl" onClick={() => setView('create')}>
-                ルームを作る
+              <Button size="xl" onClick={() => openCreate('standard')}>
+                ルームを作る（3人～）
               </Button>
-              <Button size="xl" variant="secondary" onClick={() => setView('join')}>
-                ルームに参加する
+              <Button size="xl" variant="secondary" onClick={() => openJoin('standard')}>
+                ルームに参加する（3人～）
+              </Button>
+              <Button size="xl" variant="secondary" onClick={() => openCreate('duo')}>
+                ルームを作る（2人用）
+              </Button>
+              <Button size="xl" variant="secondary" onClick={() => openJoin('duo')}>
+                ルームに参加する（2人用）
               </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="rounded-2xl border-2 border-primary-300 bg-primary-50 px-3 py-3">
-                <p className="text-lg font-bold text-slate-900">{MIN_PLAYERS}-{MAX_PLAYERS}</p>
+                <p className="text-lg font-bold text-slate-900">{DUO_PLAYERS}-{MAX_PLAYERS}</p>
                 <p className="text-[11px] text-slate-500">players</p>
               </div>
               <div className="rounded-2xl border-2 border-accent-500 bg-accent-100 px-3 py-3 transition-colors hover:border-accent-500 active:border-accent-500">

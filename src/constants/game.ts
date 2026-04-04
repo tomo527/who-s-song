@@ -1,7 +1,8 @@
-import type { RoomSettings, TimeLimitSetting } from '../types';
+import type { Room, RoomMode, RoomSettings, TimeLimitSetting } from '../types';
 
 export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 8;
+export const DUO_PLAYERS = 2;
 export const MINIMUM_GAME_TURNS = 10;
 
 export const DEFAULT_SCORING: RoomSettings['scoring'] = {
@@ -45,3 +46,12 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   guessTimeLimit: null,
   scoring: DEFAULT_SCORING,
 };
+
+export const getRoomMode = (room: Pick<Room, 'mode'> | null | undefined): RoomMode =>
+  room?.mode === 'duo' ? 'duo' : 'standard';
+
+export const getMinPlayersForMode = (mode: RoomMode): number =>
+  mode === 'duo' ? DUO_PLAYERS : MIN_PLAYERS;
+
+export const getMaxPlayersForMode = (mode: RoomMode): number =>
+  mode === 'duo' ? DUO_PLAYERS : MAX_PLAYERS;
