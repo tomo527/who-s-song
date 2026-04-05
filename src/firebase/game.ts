@@ -285,12 +285,29 @@ export const judgeTextGuess = async (
   }
 
   const guessId = `${round.parentPlayerId}_${roundId}`;
-  await updateDoc(doc(db, 'rooms', roomId, 'guesses', guessId), {
+  const guessRef = doc(db, 'rooms', roomId, 'guesses', guessId);
+  const guessSnapshot = await getDoc(guessRef);
+
+  if (!guessSnapshot.exists()) {
+    throw new Error('親の回答を読み込み中です。表示を確認してからもう一度試してください。');
+  }
+
+  const guess = { id: guessSnapshot.id, ...guessSnapshot.data() } as Guess;
+  if (!guess.textAnswer?.trim()) {
+    throw new Error('親の回答を読み込み中です。表示を確認してからもう一度試してください。');
+  }
+
+  const batch = writeBatch(db);
+  batch.update(guessRef, {
     isTextAnswerCorrect: isCorrect,
     judgedByPlayerId: playerId,
   });
+  batch.update(roundRef, {
+    phase: 'revealing',
+    phaseStartedAt: serverTimestamp(),
+  });
 
-  await updateRoundPhase(roomId, roundId, 'revealing');
+  await batch.commit();
 };
 
 export const subscribeRound = (

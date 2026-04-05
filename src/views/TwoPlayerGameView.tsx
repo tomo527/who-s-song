@@ -78,7 +78,13 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
   const [textAnswer, setTextAnswer] = useState('');
   const [guess, setGuess] = useState<Guess | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
+  const isParent = round?.parentPlayerId === playerId;
+  const otherPlayer = useMemo(
+    () => players.find((player) => player.id !== round?.parentPlayerId) ?? null,
+    [players, round?.parentPlayerId],
+  );
 
   useEffect(() => {
     setDraftTheme(round?.theme?.trim() ? round.theme : getRandomPrompt());
@@ -89,6 +95,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
     setComment('');
     setTextAnswer('');
     setGuess(null);
+    setError('');
 
     const unsubscribeSubmissions = subscribeSubmissions(roomId, roundId, (nextSubmissions) => {
       setSubmissions(nextSubmissions);
@@ -109,19 +116,20 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
       return;
     }
 
+    const canReadGuess = isParent || round.phase === 'judging' || round.phase === 'revealing';
+    if (!canReadGuess) {
+      setGuess(null);
+      return;
+    }
+
     return subscribePlayerGuess(roomId, roundId, round.parentPlayerId, (nextGuess) => {
       setGuess(nextGuess);
       if (nextGuess?.textAnswer) {
         setTextAnswer(nextGuess.textAnswer);
       }
     });
-  }, [roomId, roundId, round?.parentPlayerId]);
+  }, [isParent, roomId, round?.parentPlayerId, round?.phase, roundId]);
 
-  const isParent = round?.parentPlayerId === playerId;
-  const otherPlayer = useMemo(
-    () => players.find((player) => player.id !== round?.parentPlayerId) ?? null,
-    [players, round?.parentPlayerId],
-  );
   const submission = submissions[0] ?? null;
   const hasSubmitted = Boolean(submissions.find((candidate) => candidate.playerId === playerId));
   const isThemeReady = Boolean(round?.theme?.trim());
@@ -178,6 +186,8 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
       expired: elapsedSeconds >= countdownConfig.durationSeconds,
     };
   }, [countdownConfig, now]);
+  const judgingAnswer = guess?.textAnswer?.trim() || '';
+  const isJudgingAnswerReady = Boolean(judgingAnswer);
 
   useEffect(() => {
     if (!countdownConfig) {
@@ -198,8 +208,15 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
     }
 
     setLoading(true);
+    setError('');
     try {
       await updateRoundTheme(roomId, roundId, playerId, draftTheme.trim());
+    } catch (themeError) {
+      setError(
+        themeError instanceof Error
+          ? themeError.message
+          : 'お題の保存に失敗しました。時間をおいてもう一度試してください。',
+      );
     } finally {
       setLoading(false);
     }
@@ -211,8 +228,15 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
     }
 
     setLoading(true);
+    setError('');
     try {
       await submitSong(roomId, roundId, playerId, songName.trim(), comment.trim());
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : '提出に失敗しました。時間をおいてもう一度試してください。',
+      );
     } finally {
       setLoading(false);
     }
@@ -224,8 +248,15 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
     }
 
     setLoading(true);
+    setError('');
     try {
       await updateRoundPhase(roomId, roundId, 'guessing');
+    } catch (phaseError) {
+      setError(
+        phaseError instanceof Error
+          ? phaseError.message
+          : '回答フェーズへの移行に失敗しました。時間をおいてもう一度試してください。',
+      );
     } finally {
       setLoading(false);
     }
@@ -237,8 +268,15 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
     }
 
     setLoading(true);
+    setError('');
     try {
       await submitTextGuess(roomId, roundId, playerId, textAnswer.trim());
+    } catch (guessError) {
+      setError(
+        guessError instanceof Error
+          ? guessError.message
+          : '回答の送信に失敗しました。時間をおいてもう一度試してください。',
+      );
     } finally {
       setLoading(false);
     }
@@ -250,8 +288,15 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
     }
 
     setLoading(true);
+    setError('');
     try {
       await judgeTextGuess(roomId, roundId, playerId, isCorrect);
+    } catch (judgeError) {
+      setError(
+        judgeError instanceof Error
+          ? judgeError.message
+          : '判定の保存に失敗しました。時間をおいてもう一度試してください。',
+      );
     } finally {
       setLoading(false);
     }
@@ -312,6 +357,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
                     onChange={(event) => setDraftTheme(event.target.value)}
                     helperText="ここで決めたお題が、このターンの提出条件になります。"
                   />
+                  {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
                   <Button size="xl" fullWidth isLoading={loading} disabled={!draftTheme.trim()} onClick={handleConfirmTheme}>
                     お題を確定して提出を始める
                   </Button>
@@ -376,6 +422,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
                 <p className="text-sm font-medium text-slate-600">提出状況</p>
                 <p className="mt-2 text-lg font-semibold text-slate-900">{submission ? '提出済み' : '未提出'}</p>
               </div>
+              {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
               {submission && (
                 <Button size="lg" fullWidth isLoading={loading} onClick={handleStartGuessing}>
                   回答フェーズを始める
@@ -405,6 +452,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                 />
+                {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
                 <Button size="lg" fullWidth isLoading={loading} onClick={handleSubmitSong}>
                   この曲で提出する
                 </Button>
@@ -475,6 +523,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
                 value={textAnswer}
                 onChange={(event) => setTextAnswer(event.target.value)}
               />
+              {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
               <Button
                 size="lg"
                 fullWidth
@@ -499,7 +548,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
           <Card className={`${flatCardClass} py-12 text-center`}>
             <h3 className="text-2xl font-semibold text-slate-900">提出者が回答を確認しています</h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              あなたの回答「{guess?.textAnswer || textAnswer || '未入力'}」が正解かどうか、相手が判定しています。
+              あなたの回答「{guess?.textAnswer || textAnswer || '送信した回答を読み込み中です'}」が正解かどうか、相手が判定しています。
             </p>
           </Card>
         </Layout>
@@ -525,13 +574,29 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
               </div>
               <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">親の回答</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{guess?.textAnswer || '未回答'}</p>
+                <p className="mt-2 text-lg font-semibold text-slate-900">
+                  {isJudgingAnswerReady ? judgingAnswer : '親の回答を読み込んでいます'}
+                </p>
               </div>
+              {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
               <div className="grid gap-3 sm:grid-cols-2">
-                <Button size="lg" fullWidth isLoading={loading} onClick={() => void handleJudge(true)}>
+                <Button
+                  size="lg"
+                  fullWidth
+                  isLoading={loading}
+                  disabled={!isJudgingAnswerReady || loading}
+                  onClick={() => void handleJudge(true)}
+                >
                   正解にする
                 </Button>
-                <Button size="lg" variant="outline" fullWidth isLoading={loading} onClick={() => void handleJudge(false)}>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  fullWidth
+                  isLoading={loading}
+                  disabled={!isJudgingAnswerReady || loading}
+                  onClick={() => void handleJudge(false)}
+                >
                   不正解にする
                 </Button>
               </div>

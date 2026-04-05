@@ -6,6 +6,7 @@ import { Layout } from '../components/Layout';
 import {
   DEFAULT_ROOM_SETTINGS,
   DUO_PLAYERS,
+  MIN_PLAYERS,
   MAX_PLAYERS,
   THEME_TIME_LIMIT_OPTIONS,
   TIME_LIMIT_OPTIONS,
@@ -27,6 +28,12 @@ interface HomeViewProps {
 const getModeLabel = (mode: RoomMode) => (mode === 'duo' ? '2人用' : '3人～');
 const getCreateTitle = (mode: RoomMode) => `ルームを作る（${getModeLabel(mode)}）`;
 const getJoinTitle = (mode: RoomMode) => `ルームに参加する（${getModeLabel(mode)}）`;
+const dualLineLabel = (title: string, suffix: string) => (
+  <span className="flex w-full flex-col items-center justify-center text-center leading-tight">
+    <span>{title}</span>
+    <span className="mt-1 text-sm font-semibold">{suffix}</span>
+  </span>
+);
 
 const valueCards = [
   {
@@ -333,29 +340,53 @@ export const HomeView: React.FC<HomeViewProps> = ({ onJoinRoom, startupError }) 
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Button size="xl" onClick={() => openCreate('standard')}>
-                ルームを作る（3人～）
-              </Button>
-              <Button size="xl" variant="secondary" onClick={() => openJoin('standard')}>
-                ルームに参加する（3人～）
-              </Button>
-              <Button size="xl" variant="secondary" onClick={() => openCreate('duo')}>
-                ルームを作る（2人用）
-              </Button>
-              <Button size="xl" variant="secondary" onClick={() => openJoin('duo')}>
-                ルームに参加する（2人用）
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="rounded-2xl border-2 border-primary-300 bg-primary-50 px-3 py-3">
-                <p className="text-lg font-bold text-slate-900">{DUO_PLAYERS}-{MAX_PLAYERS}</p>
-                <p className="text-[11px] text-slate-500">players</p>
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Multi player mode</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button size="xl" className="min-h-[5.5rem]" onClick={() => openCreate('standard')}>
+                    {dualLineLabel('ルームを作る', '（3人～）')}
+                  </Button>
+                  <Button size="xl" variant="secondary" className="min-h-[5.5rem]" onClick={() => openJoin('standard')}>
+                    {dualLineLabel('ルームに参加する', '（3人～）')}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="rounded-2xl border-2 border-primary-300 bg-primary-50 px-3 py-3">
+                    <p className="text-lg font-bold text-slate-900">{MIN_PLAYERS}-{MAX_PLAYERS}</p>
+                    <p className="text-[11px] text-slate-500">players</p>
+                  </div>
+                  <div className="rounded-2xl border-2 border-accent-500 bg-accent-100 px-3 py-3 transition-colors hover:border-accent-500 active:border-accent-500">
+                    <p className="text-lg font-bold text-slate-900">50-60</p>
+                    <p className="text-[11px] text-slate-500">minutes</p>
+                  </div>
+                </div>
               </div>
-              <div className="rounded-2xl border-2 border-accent-500 bg-accent-100 px-3 py-3 transition-colors hover:border-accent-500 active:border-accent-500">
-                <p className="text-lg font-bold text-slate-900">50-60</p>
-                <p className="text-[11px] text-slate-500">minutes</p>
+
+              <div className="space-y-3 pt-2">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Two player mode</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button size="xl" className="min-h-[5.5rem]" onClick={() => openCreate('duo')}>
+                    {dualLineLabel('ルームを作る', '（2人用）')}
+                  </Button>
+                  <Button size="xl" variant="secondary" className="min-h-[5.5rem]" onClick={() => openJoin('duo')}>
+                    {dualLineLabel('ルームに参加する', '（2人用）')}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="rounded-2xl border-2 border-primary-300 bg-primary-50 px-3 py-3">
+                    <p className="text-lg font-bold text-slate-900">{DUO_PLAYERS}</p>
+                    <p className="text-[11px] text-slate-500">players</p>
+                  </div>
+                  <div className="rounded-2xl border-2 border-accent-500 bg-accent-100 px-3 py-3 transition-colors hover:border-accent-500 active:border-accent-500">
+                    <p className="text-lg font-bold text-slate-900">30</p>
+                    <p className="text-[11px] text-slate-500">minutes</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
