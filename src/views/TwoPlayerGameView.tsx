@@ -5,6 +5,7 @@ import { Input } from '../components/Input';
 import { Layout } from '../components/Layout';
 import { getRandomPrompt } from '../constants/prompts';
 import {
+  fetchPlayerGuess,
   judgeTextGuess,
   submitSong,
   submitTextGuess,
@@ -130,6 +131,49 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
     });
   }, [isParent, roomId, round?.parentPlayerId, round?.phase, roundId]);
 
+  useEffect(() => {
+    if (!round?.parentPlayerId || isParent || round.phase !== 'judging' || guess?.textAnswer?.trim()) {
+      return;
+    }
+
+    let cancelled = false;
+    let retryId: number | null = null;
+
+    const loadGuess = async (attempt = 0) => {
+      try {
+        const nextGuess = await fetchPlayerGuess(roomId, roundId, round.parentPlayerId);
+        if (cancelled) {
+          return;
+        }
+
+        if (nextGuess?.textAnswer?.trim()) {
+          setGuess(nextGuess);
+          setTextAnswer(nextGuess.textAnswer);
+          return;
+        }
+      } catch {
+        // onSnapshot を主としつつ、初回同期が間に合わないケースだけを補います。
+      }
+
+      if (cancelled || attempt >= 8) {
+        return;
+      }
+
+      retryId = window.setTimeout(() => {
+        void loadGuess(attempt + 1);
+      }, 400);
+    };
+
+    void loadGuess();
+
+    return () => {
+      cancelled = true;
+      if (retryId !== null) {
+        window.clearTimeout(retryId);
+      }
+    };
+  }, [guess?.textAnswer, isParent, roomId, round?.parentPlayerId, round?.phase, roundId]);
+
   const submission = submissions[0] ?? null;
   const hasSubmitted = Boolean(submissions.find((candidate) => candidate.playerId === playerId));
   const isThemeReady = Boolean(round?.theme?.trim());
@@ -186,7 +230,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
       expired: elapsedSeconds >= countdownConfig.durationSeconds,
     };
   }, [countdownConfig, now]);
-  const judgingAnswer = guess?.textAnswer?.trim() || '';
+  const judgingAnswer = round?.textAnswer?.trim() || guess?.textAnswer?.trim() || textAnswer.trim();
   const isJudgingAnswerReady = Boolean(judgingAnswer);
 
   useEffect(() => {
@@ -425,7 +469,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
               {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
               {submission && (
                 <Button size="lg" fullWidth isLoading={loading} onClick={handleStartGuessing}>
-                  回答フェーズを始める
+                  推理フェーズを始める
                 </Button>
               )}
             </Card>
@@ -548,7 +592,7 @@ export const TwoPlayerGameView: React.FC<TwoPlayerGameViewProps> = ({
           <Card className={`${flatCardClass} py-12 text-center`}>
             <h3 className="text-2xl font-semibold text-slate-900">提出者が回答を確認しています</h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              あなたの回答「{guess?.textAnswer || textAnswer || '送信した回答を読み込み中です'}」が正解かどうか、相手が判定しています。
+              あなたの回答「{judgingAnswer || '送信した回答を読み込み中です'}」が正解かどうか、相手が判定しています。
             </p>
           </Card>
         </Layout>

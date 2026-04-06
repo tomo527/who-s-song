@@ -240,8 +240,8 @@ export const submitTextGuess = async (
   }
 
   const guessId = `${playerId}_${roundId}`;
-
-  await setDoc(doc(db, 'rooms', roomId, 'guesses', guessId), {
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'rooms', roomId, 'guesses', guessId), {
     gameId: round.gameId,
     roundId,
     playerId,
@@ -249,8 +249,12 @@ export const submitTextGuess = async (
     textAnswer: trimmedTextAnswer,
     submittedAt: serverTimestamp(),
   });
-
-  await updateRoundPhase(roomId, roundId, 'judging');
+  batch.update(roundRef, {
+    phase: 'judging',
+    textAnswer: trimmedTextAnswer,
+    phaseStartedAt: serverTimestamp(),
+  });
+  await batch.commit();
 };
 
 export const judgeTextGuess = async (
@@ -284,19 +288,12 @@ export const judgeTextGuess = async (
     throw new Error('このラウンドの判定は提出者だけが行えます。');
   }
 
+  if (!round.textAnswer?.trim()) {
+    throw new Error('親の回答を読み込み中です。表示を確認してからもう一度試してください。');
+  }
+
   const guessId = `${round.parentPlayerId}_${roundId}`;
   const guessRef = doc(db, 'rooms', roomId, 'guesses', guessId);
-  const guessSnapshot = await getDoc(guessRef);
-
-  if (!guessSnapshot.exists()) {
-    throw new Error('親の回答を読み込み中です。表示を確認してからもう一度試してください。');
-  }
-
-  const guess = { id: guessSnapshot.id, ...guessSnapshot.data() } as Guess;
-  if (!guess.textAnswer?.trim()) {
-    throw new Error('親の回答を読み込み中です。表示を確認してからもう一度試してください。');
-  }
-
   const batch = writeBatch(db);
   batch.update(guessRef, {
     isTextAnswerCorrect: isCorrect,
@@ -304,6 +301,7 @@ export const judgeTextGuess = async (
   });
   batch.update(roundRef, {
     phase: 'revealing',
+    textAnswer: round.textAnswer,
     phaseStartedAt: serverTimestamp(),
   });
 
@@ -356,6 +354,22 @@ export const subscribePlayerGuess = (
   return onSnapshot(doc(db, 'rooms', roomId, 'guesses', guessId), (guessDoc) => {
     callback(guessDoc.exists() ? ({ id: guessDoc.id, ...guessDoc.data() } as Guess) : null);
   });
+};
+
+export const fetchPlayerGuess = async (
+  roomId: string,
+  roundId: string,
+  playerId: string,
+): Promise<Guess | null> => {
+  const db = getDb();
+  const guessId = `${playerId}_${roundId}`;
+  const guessSnapshot = await getDoc(doc(db, 'rooms', roomId, 'guesses', guessId));
+
+  if (!guessSnapshot.exists()) {
+    return null;
+  }
+
+  return { id: guessSnapshot.id, ...guessSnapshot.data() } as Guess;
 };
 
 export const finalizeRoundScores = async (

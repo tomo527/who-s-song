@@ -151,7 +151,7 @@ export const TwoPlayerResultView: React.FC<TwoPlayerResultViewProps> = ({
             </div>
             <div className="rounded-2xl border-2 border-slate-300 bg-white px-4 py-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">親の回答</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">{guess?.textAnswer || '未回答'}</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{round.textAnswer || guess?.textAnswer || '未回答'}</p>
             </div>
             <div
               className={`rounded-2xl border-2 px-4 py-4 ${

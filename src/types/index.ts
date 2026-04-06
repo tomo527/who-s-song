@@ -44,6 +44,7 @@ export interface Round {
   theme: string;
   phase: RoundPhase;
   parentPlayerId: string;
+  textAnswer?: string;
   startedAt: number;
   phaseStartedAt?: number;
   scoreFinalized?: boolean;
