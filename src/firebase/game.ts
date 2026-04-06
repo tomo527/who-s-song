@@ -301,7 +301,6 @@ export const judgeTextGuess = async (
   });
   batch.update(roundRef, {
     phase: 'revealing',
-    textAnswer: round.textAnswer,
     phaseStartedAt: serverTimestamp(),
   });
 
