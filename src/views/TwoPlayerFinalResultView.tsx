@@ -151,7 +151,6 @@ export const TwoPlayerFinalResultView: React.FC<TwoPlayerFinalResultViewProps> =
                 >
                   <div>
                     <h3 className="text-xl font-semibold text-slate-900">{playerStat.playerName}</h3>
-                    <p className="mt-1 text-sm text-slate-500">{playerStat.score}pt</p>
                   </div>
                   <div className="grid gap-3">
                     <MetricBlock

@@ -38,7 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, title, showBack, onBac
       <main className="relative mx-auto max-w-md px-4 py-5 pb-28">{children}</main>
 
       <footer className="pointer-events-none fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/92 px-4 py-4 text-center text-[11px] text-slate-500">
-        3-8人で遊べる匿名セトリ推理ゲーム
+        誰の曲？匿名セトリ推理ゲーム
       </footer>
     </div>
   );
