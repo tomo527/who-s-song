@@ -39,6 +39,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, title, showBack, onBac
 
       <footer className="pointer-events-none fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/92 px-4 py-4 text-center text-[11px] text-slate-500">
         誰の曲？匿名セトリ推理ゲーム
+        <span className="mx-1.5 text-slate-300">・</span>
+        <a href="/commercial-disclosure" className="pointer-events-auto underline hover:text-slate-700">
+          特定商取引法に基づく表記
+        </a>
       </footer>
     </div>
   );

@@ -6,6 +6,7 @@ import { waitForAuthReady } from './firebase/auth';
 import { useRoom } from './hooks/useRoom';
 import { getRoomMode } from './constants/game';
 import type { Player, Round } from './types';
+import { CommercialDisclosureView } from './views/CommercialDisclosureView';
 import { FinalResultView } from './views/FinalResultView';
 import { GameView } from './views/GameView';
 import { HomeView } from './views/HomeView';
@@ -158,6 +159,10 @@ function App() {
   };
 
   const authReady = !gameState || firebaseConfigError ? true : authResolved;
+
+  if (typeof window !== 'undefined' && window.location.pathname.replace(/\/+$/, '') === '/commercial-disclosure') {
+    return <CommercialDisclosureView onBack={() => { window.location.href = '/'; }} />;
+  }
 
   if (!gameState) {
     return <HomeView onJoinRoom={handleJoinRoom} startupError={firebaseConfigError} />;
